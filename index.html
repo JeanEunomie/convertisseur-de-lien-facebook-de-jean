@@ -1,0 +1,19 @@
+<!doctype html><html lang="fr"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Convertisseur Facebook</title><style>
+*{box-sizing:border-box}body{margin:0;background:#0f172a;color:#fff;font-family:system-ui;min-height:100vh;display:grid;place-items:center;padding:18px}
+main{width:min(650px,100%);background:#1e293b;border-radius:22px;padding:24px}h1{margin-top:0}
+input{width:100%;padding:16px;border:1px solid #475569;border-radius:13px;background:#0f172a;color:#fff;font-size:16px}
+button{width:100%;margin-top:12px;padding:14px;border:0;border-radius:13px;background:#1877f2;color:#fff;font-weight:800;font-size:16px}
+#r{display:none;margin-top:18px;padding:15px;background:#0f172a;border-radius:13px;word-break:break-all}.muted{color:#94a3b8;font-size:13px}
+</style></head><body><main><h1>Convertisseur Facebook</h1>
+<p>Colle un lien Facebook <b>/share/…</b>.</p><input id="u" placeholder="https://www.facebook.com/share/...">
+<button onclick="go()">Convertir</button><div id="r"></div>
+<p class="muted">Aucun identifiant Facebook n'est demandé. Certains liens nécessitant une connexion Facebook peuvent ne pas être résolus.</p>
+<script>
+const esc=s=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function go(){let b=document.getElementById('r');b.style.display='block';b.textContent='Conversion…';
+try{let x=await fetch('/api/resolve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:document.getElementById('u').value})});
+let d=await x.json();if(!x.ok)throw Error(d.error||'Erreur');b.innerHTML='<b>Lien final :</b><br>'+esc(d.final_url)+'<button id="c">Copier</button>';
+document.getElementById('c').onclick=async()=>{await navigator.clipboard.writeText(d.final_url);document.getElementById('c').textContent='Copié !'}}catch(e){b.textContent=e.message}}
+</script></main></body></html>
