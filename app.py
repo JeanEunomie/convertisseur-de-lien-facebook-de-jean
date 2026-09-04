@@ -16,11 +16,17 @@ def clean_facebook_url(url):
     try:
         p = urlparse(url)
         qs = parse_qs(p.query)
-        if p.path.rstrip("/").lower() == "/profile.php" and qs.get("id"):
+        path = p.path.rstrip("/") or "/"
+        if path.lower() == "/profile.php" and qs.get("id"):
             fb_id = qs["id"][0]
             if fb_id.isdigit():
                 return "https://www.facebook.com/profile.php?" + urlencode({"id": fb_id})
-        return url
+        keep = {}
+        for key in ("id", "story_fbid", "fbid", "v"):
+            if key in qs and qs[key]:
+                keep[key] = qs[key][0]
+        base = "https://www.facebook.com" + path
+        return base + ("?" + urlencode(keep) if keep else "")
     except Exception:
         return url
 
