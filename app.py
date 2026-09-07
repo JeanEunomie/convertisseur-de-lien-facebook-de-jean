@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, send_from_directory
-import requests
-from urllib.parse import urlparse, urljoin, parse_qs, urlencode
+import requests, re, html
+from urllib.parse import urlparse, urljoin, parse_qs, urlencode, unquote
 
 app = Flask(__name__)
 
@@ -30,6 +30,24 @@ def clean_facebook_url(url):
     except Exception:
         return url
 
+
+def try_people_numeric(url):
+    try:
+        if not urlparse(url).path.lower().startswith("/people/"):
+            return None
+        r = requests.get(url, timeout=12, headers={"User-Agent":"Mozilla/5.0"}, allow_redirects=True)
+        fp, fq = urlparse(r.url), parse_qs(urlparse(r.url).query)
+        if fp.path.rstrip("/").lower() == "/profile.php" and fq.get("id") and fq["id"][0].isdigit():
+            return fq["id"][0]
+        text = html.unescape(r.text)
+        for pat in (r'"userID"\s*:\s*"(\d{8,25})"', r'"user_id"\s*:\s*"(\d{8,25})"',
+                    r'"profile_id"\s*:\s*"(\d{8,25})"', r'profile\.php\?id=(\d{8,25})'):
+            m = re.search(pat, text, re.I)
+            if m: return m.group(1)
+    except requests.RequestException:
+        pass
+    return None
+
 @app.get("/")
 def index():
     return send_from_directory(".", "index.html")
@@ -50,6 +68,11 @@ def resolve():
                 current = nxt
             else:
                 break
-        return jsonify(final_url=clean_facebook_url(current))
+        cleaned = clean_facebook_url(current)
+        if urlparse(cleaned).path.lower().startswith("/people/"):
+            fb_id = try_people_numeric(cleaned)
+            if fb_id:
+                cleaned = "https://www.facebook.com/profile.php?id=" + fb_id
+        return jsonify(final_url=cleaned)
     except requests.RequestException:
         return jsonify(error="Facebook n'a pas permis de résoudre ce lien sans connexion."), 502
