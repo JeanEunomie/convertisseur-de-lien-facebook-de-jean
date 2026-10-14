@@ -2,18 +2,12 @@
 <html lang="fr">
 
 <head>
-
 <meta charset="utf-8">
-
-<meta
-    name="viewport"
-    content="width=device-width,initial-scale=1"
->
+<meta name="viewport" content="width=device-width,initial-scale=1">
 
 <title>Convertisseur Facebook</title>
 
 <style>
-
 * {
     box-sizing: border-box;
 }
@@ -52,8 +46,7 @@ input {
     font-size: 16px;
 }
 
-button,
-a.btn {
+button {
     display: block;
     width: 100%;
     padding: 15px;
@@ -65,11 +58,10 @@ a.btn {
     font-weight: 800;
     font-size: 16px;
     text-align: center;
-    text-decoration: none;
+    cursor: pointer;
 }
 
-button:active,
-a.btn:active {
+button:active {
     opacity: .8;
 }
 
@@ -116,10 +108,9 @@ a.btn:active {
     color: #bdc7d8;
     line-height: 1.5;
 }
-
 </style>
-
 </head>
+
 
 <body>
 
@@ -131,8 +122,7 @@ Facebook
 </h1>
 
 <p>
-Colle un lien Facebook
-<b>/share/…</b>
+Colle un lien Facebook <b>/share/…</b>
 </p>
 
 <input
@@ -147,61 +137,58 @@ Colle un lien Facebook
 
 <div
     class="box"
-    id="result"
-></div>
+    id="result">
+</div>
 
 
 <div
     class="box warning"
-    id="fallback"
->
+    id="fallback">
 
-<div class="status">
-⚠️ Conversion automatique bloquée
-</div>
+    <div class="status">
+        ⚠️ Conversion automatique bloquée
+    </div>
 
-<p id="reason" class="small"></p>
+    <p id="reason" class="small"></p>
 
-<p class="small">
-Le convertisseur a essayé les différentes méthodes disponibles,
-mais Facebook ne révèle pas toujours le profil aux serveurs qui
-ne sont pas connectés à un compte.
-</p>
+    <p class="small">
+        Facebook demande parfois une connexion et empêche
+        le serveur d'identifier automatiquement le profil.
+    </p>
 
-<a
-    class="btn"
-    id="openfb"
-    target="_blank"
-    rel="noopener"
->
-    Ouvrir dans Facebook
-</a>
+    <!-- Lien conservé ici -->
+    <input
+        type="hidden"
+        id="openfb_url"
+    >
 
-<p class="small">
-Si tu réussis à récupérer une adresse du type
-<b>profile.php?id=…</b>,
-<b>/nom.utilisateur</b>
-ou
-<b>/people/…</b>,
-colle-la ici :
-</p>
+    <button onclick="ouvrirFacebook()">
+        Ouvrir Facebook dans un nouvel onglet
+    </button>
 
-<input
-    id="manual"
-    placeholder="Colle ici le lien du profil"
->
+    <p class="small">
+        Le convertisseur reste ouvert dans cet onglet.
+        Une fois sur le profil Facebook, si tu récupères
+        une adresse du type <b>profile.php?id=…</b>,
+        <b>/nom.utilisateur</b> ou <b>/people/…</b>,
+        reviens ici et colle-la ci-dessous.
+    </p>
 
-<button onclick="cleanManual()">
-    Analyser ce lien
-</button>
+    <input
+        id="manual"
+        placeholder="Colle ici le lien du profil"
+    >
+
+    <button onclick="cleanManual()">
+        Analyser ce lien
+    </button>
 
 </div>
 
 
 <p class="muted">
 Aucun mot de passe ni cookie Facebook n'est demandé ou enregistré.
-Le convertisseur ne fabrique jamais d'identifiant Facebook :
-il utilise uniquement les informations réellement fournies par Facebook.
+Le convertisseur utilise uniquement les informations fournies par Facebook.
 </p>
 
 </main>
@@ -214,7 +201,6 @@ const F = document.getElementById("fallback");
 
 
 function esc(s) {
-
     return String(s).replace(
         /[&<>"']/g,
         c => ({
@@ -224,6 +210,27 @@ function esc(s) {
             '"': "&quot;",
             "'": "&#39;"
         }[c])
+    );
+}
+
+
+/* NOUVEAU :
+   ouverture dans un nouvel onglet
+*/
+function ouvrirFacebook() {
+
+    const url =
+        document.getElementById("openfb_url").value;
+
+    if (!url) {
+        alert("Aucun lien Facebook disponible.");
+        return;
+    }
+
+    window.open(
+        url,
+        "_blank",
+        "noopener,noreferrer"
     );
 }
 
@@ -256,18 +263,14 @@ function success(url) {
 function blocked(message, original) {
 
     R.style.display = "none";
-
     F.style.display = "block";
 
     document.getElementById("reason").textContent =
         message ||
         "Facebook bloque actuellement la résolution de ce lien.";
 
-    if (original) {
-
-        document.getElementById("openfb").href =
-            original;
-    }
+    document.getElementById("openfb_url").value =
+        original || "";
 }
 
 
@@ -280,6 +283,7 @@ async function go() {
 
     R.className = "box";
     R.style.display = "block";
+
     R.textContent =
         "Recherche du véritable profil Facebook…";
 
