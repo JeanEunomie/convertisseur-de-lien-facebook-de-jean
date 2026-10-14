@@ -1,33 +1,389 @@
-<!doctype html><html lang="fr"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<!doctype html>
+<html lang="fr">
+
+<head>
+
+<meta charset="utf-8">
+
+<meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+>
+
 <title>Convertisseur Facebook</title>
+
 <style>
-*{box-sizing:border-box}body{margin:0;background:#0b1529;color:#fff;font-family:system-ui;min-height:100vh;display:grid;place-items:center;padding:20px}
-main{width:min(650px,100%);background:#1d2a40;padding:26px;border-radius:22px}
-h1{font-size:2.2rem;margin:0 0 25px}input{width:100%;padding:15px;border-radius:13px;border:1px solid #526078;background:#0d172b;color:#fff;font-size:16px}
-button,a.btn{display:block;width:100%;padding:14px;margin-top:12px;border:0;border-radius:13px;background:#1877f2;color:#fff;font-weight:800;font-size:16px;text-align:center;text-decoration:none}
-.box{margin-top:18px;background:#0d172b;padding:18px;border-radius:15px;word-break:break-all}
-#result,#fallback{display:none}.muted{color:#9aa8bd;font-size:13px;line-height:1.4}.steps{line-height:1.5}
-</style></head><body><main>
-<h1>Convertisseur<br>Facebook</h1>
-<p>Colle un lien Facebook <b>/share/…</b></p>
-<input id="u" placeholder="https://www.facebook.com/share/...">
-<button onclick="go()">Convertir</button>
-<div class="box" id="result"></div>
-<div class="box" id="fallback">
-<b>Facebook demande une connexion.</b>
-<p class="steps">1. Appuie sur « Ouvrir dans Facebook ».<br>
-2. Sur le profil obtenu, utilise <b>Partager / Copier le lien</b>.<br>
-3. Reviens ici et colle le lien ci-dessous.</p>
-<a class="btn" id="openfb" target="_blank" rel="noopener">Ouvrir dans Facebook</a>
-<input id="manual" style="margin-top:15px" placeholder="Colle ici le lien récupéré">
-<button onclick="cleanManual()">Nettoyer ce lien</button>
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: #0b1529;
+    color: white;
+    font-family: system-ui, sans-serif;
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+}
+
+main {
+    width: min(650px, 100%);
+    background: #1d2a40;
+    padding: 28px;
+    border-radius: 22px;
+}
+
+h1 {
+    font-size: 2.3rem;
+    margin: 0 0 25px;
+    line-height: 1.05;
+}
+
+input {
+    width: 100%;
+    padding: 16px;
+    border-radius: 13px;
+    border: 1px solid #526078;
+    background: #0d172b;
+    color: white;
+    font-size: 16px;
+}
+
+button,
+a.btn {
+    display: block;
+    width: 100%;
+    padding: 15px;
+    margin-top: 13px;
+    border: 0;
+    border-radius: 13px;
+    background: #1877f2;
+    color: white;
+    font-weight: 800;
+    font-size: 16px;
+    text-align: center;
+    text-decoration: none;
+}
+
+button:active,
+a.btn:active {
+    opacity: .8;
+}
+
+.box {
+    margin-top: 20px;
+    background: #0d172b;
+    padding: 20px;
+    border-radius: 15px;
+    word-break: break-all;
+}
+
+.success {
+    border: 1px solid #3b8f65;
+}
+
+.warning {
+    border: 1px solid #a77a35;
+}
+
+#result,
+#fallback {
+    display: none;
+}
+
+.status {
+    font-size: 18px;
+    font-weight: 800;
+    margin-bottom: 10px;
+}
+
+.url {
+    font-size: 17px;
+    line-height: 1.4;
+}
+
+.muted {
+    color: #9aa8bd;
+    font-size: 13px;
+    line-height: 1.5;
+    margin-top: 20px;
+}
+
+.small {
+    color: #bdc7d8;
+    line-height: 1.5;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<main>
+
+<h1>
+Convertisseur<br>
+Facebook
+</h1>
+
+<p>
+Colle un lien Facebook
+<b>/share/…</b>
+</p>
+
+<input
+    id="u"
+    placeholder="https://www.facebook.com/share/..."
+>
+
+<button onclick="go()">
+    Convertir
+</button>
+
+
+<div
+    class="box"
+    id="result"
+></div>
+
+
+<div
+    class="box warning"
+    id="fallback"
+>
+
+<div class="status">
+⚠️ Conversion automatique bloquée
 </div>
-<p class="muted">Aucun mot de passe ni cookie Facebook n'est demandé ou enregistré.</p>
+
+<p id="reason" class="small"></p>
+
+<p class="small">
+Le convertisseur a essayé les différentes méthodes disponibles,
+mais Facebook ne révèle pas toujours le profil aux serveurs qui
+ne sont pas connectés à un compte.
+</p>
+
+<a
+    class="btn"
+    id="openfb"
+    target="_blank"
+    rel="noopener"
+>
+    Ouvrir dans Facebook
+</a>
+
+<p class="small">
+Si tu réussis à récupérer une adresse du type
+<b>profile.php?id=…</b>,
+<b>/nom.utilisateur</b>
+ou
+<b>/people/…</b>,
+colle-la ici :
+</p>
+
+<input
+    id="manual"
+    placeholder="Colle ici le lien du profil"
+>
+
+<button onclick="cleanManual()">
+    Analyser ce lien
+</button>
+
+</div>
+
+
+<p class="muted">
+Aucun mot de passe ni cookie Facebook n'est demandé ou enregistré.
+Le convertisseur ne fabrique jamais d'identifiant Facebook :
+il utilise uniquement les informations réellement fournies par Facebook.
+</p>
+
+</main>
+
+
 <script>
-const R=document.getElementById('result'),F=document.getElementById('fallback');
-const esc=s=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function show(url){F.style.display='none';R.style.display='block';R.innerHTML='<b>Lien final :</b><br>'+esc(url)+'<button id="copy">Copier</button>';document.getElementById('copy').onclick=async()=>{await navigator.clipboard.writeText(url);document.getElementById('copy').textContent='Copié !'}}
-async function go(){R.style.display='block';R.textContent='Conversion…';F.style.display='none';try{let x=await fetch('/api/resolve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:document.getElementById('u').value})});let d=await x.json();if(!x.ok)throw Error(d.error||'Erreur');if(d.blocked){R.style.display='none';F.style.display='block';document.getElementById('openfb').href=d.original_url}else show(d.final_url)}catch(e){R.textContent=e.message}}
-async function cleanManual(){try{let x=await fetch('/api/clean',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:document.getElementById('manual').value})});let d=await x.json();if(!x.ok)throw Error(d.error||'Erreur');show(d.final_url)}catch(e){R.style.display='block';R.textContent=e.message}}
-</script></main></body></html>
+
+const R = document.getElementById("result");
+const F = document.getElementById("fallback");
+
+
+function esc(s) {
+
+    return String(s).replace(
+        /[&<>"']/g,
+        c => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;"
+        }[c])
+    );
+}
+
+
+function success(url) {
+
+    F.style.display = "none";
+
+    R.className = "box success";
+    R.style.display = "block";
+
+    R.innerHTML =
+        '<div class="status">✅ Lien trouvé</div>' +
+        '<div class="url">' +
+        esc(url) +
+        '</div>' +
+        '<button id="copy">Copier le lien</button>';
+
+    document.getElementById("copy").onclick =
+        async () => {
+
+            await navigator.clipboard.writeText(url);
+
+            document.getElementById("copy").textContent =
+                "Copié !";
+        };
+}
+
+
+function blocked(message, original) {
+
+    R.style.display = "none";
+
+    F.style.display = "block";
+
+    document.getElementById("reason").textContent =
+        message ||
+        "Facebook bloque actuellement la résolution de ce lien.";
+
+    if (original) {
+
+        document.getElementById("openfb").href =
+            original;
+    }
+}
+
+
+async function go() {
+
+    const url =
+        document.getElementById("u").value.trim();
+
+    F.style.display = "none";
+
+    R.className = "box";
+    R.style.display = "block";
+    R.textContent =
+        "Recherche du véritable profil Facebook…";
+
+    try {
+
+        const response = await fetch(
+            "/api/resolve",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    url: url
+                })
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.error || "Erreur"
+            );
+        }
+
+        if (data.success) {
+
+            success(data.final_url);
+
+        } else {
+
+            blocked(
+                data.message,
+                data.original_url || url
+            );
+        }
+
+    } catch (e) {
+
+        R.style.display = "block";
+        R.textContent = e.message;
+    }
+}
+
+
+async function cleanManual() {
+
+    const url =
+        document.getElementById("manual").value.trim();
+
+    R.className = "box";
+    R.style.display = "block";
+
+    R.textContent =
+        "Analyse du lien…";
+
+    try {
+
+        const response = await fetch(
+            "/api/clean",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    url: url
+                })
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.error || "Erreur"
+            );
+        }
+
+        if (data.success) {
+
+            success(data.final_url);
+
+        } else {
+
+            R.className = "box warning";
+
+            R.innerHTML =
+                '<div class="status">⚠️ Impossible à convertir</div>' +
+                '<div class="small">' +
+                esc(data.message || "Facebook bloque ce lien.") +
+                '</div>';
+        }
+
+    } catch (e) {
+
+        R.className = "box warning";
+        R.style.display = "block";
+        R.textContent = e.message;
+    }
+}
+
+</script>
+
+</body>
+</html>
