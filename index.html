@@ -114,6 +114,39 @@ button:active {
     margin-top: 20px;
 }
 
+/* AIDE ANDROID / IPHONE */
+
+.help-button {
+    background: transparent;
+    border: 1px solid #526078;
+    color: #bdc7d8;
+    font-size: 14px;
+}
+
+.browser-help {
+    display: none;
+    margin-top: 15px;
+    padding: 18px;
+    border-radius: 13px;
+    background: #111d31;
+    color: #bdc7d8;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.browser-help h3 {
+    color: white;
+    margin: 18px 0 6px;
+}
+
+.browser-help strong {
+    color: white;
+}
+
+.browser-help p {
+    margin: 8px 0;
+}
+
 </style>
 
 </head>
@@ -128,18 +161,15 @@ Convertisseur<br>
 Facebook
 </h1>
 
-
 <p>
 Colle un lien Facebook <b>/share/…</b>
 </p>
-
 
 <input
     id="u"
     type="url"
     placeholder="https://www.facebook.com/share/..."
 >
-
 
 <button onclick="go()">
     Convertir
@@ -160,40 +190,106 @@ Colle un lien Facebook <b>/share/…</b>
         ⚠️ Conversion automatique bloquée
     </div>
 
-
     <p
         id="reason"
         class="small">
     </p>
-
 
     <p class="small">
         Facebook n'a pas permis au serveur
         d'identifier automatiquement le profil.
     </p>
 
-
-    <!--
-        Le lien Facebook est stocké ici.
-        Ce champ n'est pas visible.
-    -->
-
     <input
         type="hidden"
         id="openfb_url"
     >
 
-
     <button onclick="ouvrirFacebook()">
-        Ouvrir Facebook Web dans un nouvel onglet
+        🌐 Ouvrir Facebook Web dans un nouvel onglet
     </button>
 
 
+    <!-- AIDE -->
+
+    <button
+        class="help-button"
+        onclick="toggleHelp()"
+        type="button"
+    >
+        📱 Facebook s'ouvre dans l'application ?
+    </button>
+
+
+    <div
+        id="browserHelp"
+        class="browser-help"
+    >
+
+        <strong>
+            Pour utiliser le convertisseur,
+            Facebook doit s'ouvrir dans votre navigateur.
+        </strong>
+
+
+        <h3>🤖 Android</h3>
+
+        <p>
+            1. Ouvrez les <b>Paramètres</b> du téléphone.<br><br>
+
+            2. Allez dans
+            <b>Applications → Facebook</b>.<br><br>
+
+            3. Ouvrez
+            <b>Ouvrir par défaut</b> ou
+            <b>Définir par défaut</b>.<br><br>
+
+            4. Désactivez
+            <b>Ouvrir les liens compatibles</b>
+            ou
+            <b>Ouvrir les liens pris en charge</b>.
+        </p>
+
+        <p>
+            ⚠️ Si plusieurs applications ou comptes
+            Facebook apparaissent sur votre téléphone,
+            faites cette manipulation pour chaque
+            application Facebook concernée.
+        </p>
+
+
+        <h3>🍎 iPhone / iPad</h3>
+
+        <p>
+            Sur iPhone, iOS ne propose pas le même
+            réglage qu'Android permettant de désactiver
+            définitivement tous les liens associés
+            à l'application Facebook.
+        </p>
+
+        <p>
+            Ouvrez le lien dans <b>Safari</b>.
+        </p>
+
+        <p>
+            Si nécessaire, effectuez un
+            <b>appui prolongé sur le lien</b>
+            puis choisissez
+            <b>Ouvrir dans un nouvel onglet</b>
+            lorsque cette option est proposée.
+        </p>
+
+        <p>
+            Revenez ensuite sur le convertisseur.
+        </p>
+
+    </div>
+
+
     <p class="small">
-        Le convertisseur restera ouvert ici.
-        Une fois sur Facebook Web, si tu récupères
-        le véritable lien du profil, reviens ici
-        et colle-le ci-dessous.
+        Une fois sur Facebook Web, si vous récupérez
+        le véritable lien du profil, revenez ici
+        et collez-le ci-dessous.
     </p>
 
 
@@ -212,10 +308,9 @@ Colle un lien Facebook <b>/share/…</b>
 
 
 <p class="muted">
-Aucun mot de passe ni cookie Facebook
+🔒 Aucun mot de passe ni cookie Facebook
 n'est demandé ou enregistré.
 </p>
-
 
 </main>
 
@@ -232,7 +327,7 @@ const F =
 
 
 /* ==============================
-   PROTECTION AFFICHAGE HTML
+   PROTECTION AFFICHAGE
 ================================ */
 
 function esc(s) {
@@ -252,7 +347,34 @@ function esc(s) {
 
 
 /* ==============================
-   OUVERTURE FACEBOOK WEB MOBILE
+   AIDE ANDROID / IPHONE
+================================ */
+
+function toggleHelp() {
+
+    const help =
+        document.getElementById(
+            "browserHelp"
+        );
+
+    if (
+        help.style.display === "block"
+    ) {
+
+        help.style.display =
+            "none";
+
+    } else {
+
+        help.style.display =
+            "block";
+    }
+}
+
+
+
+/* ==============================
+   OUVERTURE FACEBOOK WEB
 ================================ */
 
 function ouvrirFacebook() {
@@ -274,27 +396,37 @@ function ouvrirFacebook() {
 
 
     /*
-       On transforme www.facebook.com
-       en m.facebook.com.
+       On remplace le domaine Facebook
+       par sa version Web mobile.
     */
 
-    url = url
-        .replace(
-            "https://www.facebook.com",
-            "https://m.facebook.com"
-        )
-        .replace(
-            "http://www.facebook.com",
-            "https://m.facebook.com"
-        )
-        .replace(
-            "https://web.facebook.com",
-            "https://m.facebook.com"
+    try {
+
+        const fbUrl =
+            new URL(url);
+
+        fbUrl.protocol =
+            "https:";
+
+        fbUrl.hostname =
+            "m.facebook.com";
+
+        url =
+            fbUrl.toString();
+
+    } catch {
+
+        alert(
+            "Le lien Facebook n'est pas valide."
         );
+
+        return;
+    }
 
 
     /*
-       Ouverture dans un nouvel onglet.
+       Demande au navigateur
+       l'ouverture dans un nouvel onglet.
     */
 
     window.open(
@@ -333,16 +465,16 @@ function success(url) {
         '</div>' +
 
         '<button id="copy">' +
-        'Copier le lien' +
+        '📋 Copier le lien' +
         '</button>' +
 
         '<button id="openResult">' +
-        'Ouvrir le profil' +
+        '🌐 Ouvrir le profil' +
         '</button>';
 
 
     /*
-       Copier le lien
+       COPIER
     */
 
     document
@@ -358,7 +490,7 @@ function success(url) {
                 document
                     .getElementById("copy")
                     .textContent =
-                    "Copié !";
+                    "✅ Copié !";
 
             } catch {
 
@@ -370,8 +502,7 @@ function success(url) {
 
 
     /*
-       Ouvrir le résultat
-       dans un nouvel onglet.
+       OUVRIR LE PROFIL
     */
 
     document
@@ -379,8 +510,24 @@ function success(url) {
         .onclick =
         () => {
 
+            let webUrl = url;
+
+            try {
+
+                const parsed =
+                    new URL(url);
+
+                parsed.hostname =
+                    "m.facebook.com";
+
+                webUrl =
+                    parsed.toString();
+
+            } catch {}
+
+
             window.open(
-                url,
+                webUrl,
                 "_blank",
                 "noopener,noreferrer"
             );
@@ -390,7 +537,7 @@ function success(url) {
 
 
 /* ==============================
-   FACEBOOK BLOQUE LA CONVERSION
+   FACEBOOK BLOQUE
 ================================ */
 
 function blocked(
@@ -416,8 +563,9 @@ function blocked(
 
 
     document
-        .getElementById("openfb_url")
-        .value =
+        .getElementById(
+            "openfb_url"
+        ).value =
 
         original || "";
 }
@@ -469,6 +617,7 @@ async function go() {
             await fetch(
                 "/api/resolve",
                 {
+
                     method: "POST",
 
                     headers: {
@@ -503,9 +652,7 @@ async function go() {
                 data.final_url
             );
 
-        }
-
-        else {
+        } else {
 
             blocked(
                 data.message,
@@ -531,7 +678,7 @@ async function go() {
 
 
 /* ==============================
-   ANALYSE DU LIEN MANUEL
+   ANALYSE MANUELLE
 ================================ */
 
 async function cleanManual() {
@@ -604,9 +751,7 @@ async function cleanManual() {
                 data.final_url
             );
 
-        }
-
-        else {
+        } else {
 
             R.className =
                 "box warning";
