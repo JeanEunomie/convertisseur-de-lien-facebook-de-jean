@@ -8,7 +8,6 @@
 <title>Convertisseur Facebook</title>
 
 <style>
-
 * {
     box-sizing: border-box;
 }
@@ -25,20 +24,21 @@ body {
 }
 
 main {
-    width: min(650px, 100%);
+    width: min(620px, 100%);
     background: #1d2a40;
     padding: 28px;
     border-radius: 22px;
 }
 
 h1 {
-    font-size: 2.3rem;
-    margin: 0 0 25px;
+    font-size: 2.2rem;
     line-height: 1.05;
+    margin: 0 0 10px;
 }
 
-p {
-    line-height: 1.5;
+.intro {
+    color: #bdc7d8;
+    margin: 0 0 20px;
 }
 
 input {
@@ -52,17 +52,15 @@ input {
 }
 
 button {
-    display: block;
     width: 100%;
     padding: 15px;
-    margin-top: 13px;
+    margin-top: 12px;
     border: 0;
     border-radius: 13px;
     background: #1877f2;
     color: white;
     font-weight: 800;
     font-size: 16px;
-    text-align: center;
     cursor: pointer;
 }
 
@@ -70,12 +68,22 @@ button:active {
     opacity: .8;
 }
 
+.secondary {
+    background: transparent;
+    border: 1px solid #526078;
+    color: #bdc7d8;
+}
+
+#result,
+#fallback {
+    display: none;
+}
+
 .box {
     margin-top: 20px;
-    background: #0d172b;
     padding: 20px;
     border-radius: 15px;
-    word-break: break-all;
+    background: #0d172b;
 }
 
 .success {
@@ -86,35 +94,26 @@ button:active {
     border: 1px solid #a77a35;
 }
 
-#result,
-#fallback {
-    display: none;
-}
-
 .status {
-    font-size: 18px;
+    font-size: 19px;
     font-weight: 800;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
 }
 
-.url {
-    font-size: 17px;
-    line-height: 1.4;
+.final-url {
+    padding: 14px;
+    background: #162239;
+    border-radius: 10px;
+    word-break: break-all;
+    font-size: 15px;
+    line-height: 1.5;
 }
 
 .small {
     color: #bdc7d8;
-    line-height: 1.5;
+    font-size: 14px;
+    line-height: 1.55;
 }
-
-.muted {
-    color: #9aa8bd;
-    font-size: 13px;
-    line-height: 1.5;
-    margin-top: 20px;
-}
-
-/* AIDE ANDROID / IPHONE */
 
 .help-button {
     background: transparent;
@@ -126,7 +125,7 @@ button:active {
 .browser-help {
     display: none;
     margin-top: 15px;
-    padding: 18px;
+    padding: 17px;
     border-radius: 13px;
     background: #111d31;
     color: #bdc7d8;
@@ -136,202 +135,216 @@ button:active {
 
 .browser-help h3 {
     color: white;
-    margin: 18px 0 6px;
+    margin: 18px 0 7px;
 }
 
 .browser-help strong {
     color: white;
 }
 
-.browser-help p {
-    margin: 8px 0;
+.separator {
+    height: 1px;
+    background: #344158;
+    margin: 20px 0;
 }
 
+.privacy {
+    color: #8492a8;
+    font-size: 12px;
+    text-align: center;
+    margin: 20px 0 0;
+}
 </style>
-
 </head>
-
 
 <body>
 
 <main>
 
-<h1>
-Convertisseur<br>
-Facebook
-</h1>
+    <h1>Convertisseur Facebook</h1>
 
-<p>
-Colle un lien Facebook <b>/share/…</b>
-</p>
-
-<input
-    id="u"
-    type="url"
-    placeholder="https://www.facebook.com/share/..."
->
-
-<button onclick="go()">
-    Convertir
-</button>
-
-
-<div
-    class="box"
-    id="result">
-</div>
-
-
-<div
-    class="box warning"
-    id="fallback">
-
-    <div class="status">
-        ⚠️ Conversion automatique bloquée
-    </div>
-
-    <p
-        id="reason"
-        class="small">
+    <p class="intro">
+        Transforme un lien Facebook partagé en lien de profil permanent.
     </p>
 
-    <p class="small">
-        Facebook n'a pas permis au serveur
-        d'identifier automatiquement le profil.
-    </p>
+    <!-- ZONE PRINCIPALE -->
 
-    <input
-        type="hidden"
-        id="openfb_url"
-    >
+    <div id="mainForm">
 
-    <button onclick="ouvrirFacebook()">
-        🌐 Ouvrir Facebook Web dans un nouvel onglet
-    </button>
+        <input
+            id="u"
+            type="url"
+            placeholder="https://www.facebook.com/share/..."
+        >
 
-
-    <!-- AIDE -->
-
-    <button
-        class="help-button"
-        onclick="toggleHelp()"
-        type="button"
-    >
-        📱 Facebook s'ouvre dans l'application ?
-    </button>
-
-
-    <div
-        id="browserHelp"
-        class="browser-help"
-    >
-
-        <strong>
-            Pour utiliser le convertisseur,
-            Facebook doit s'ouvrir dans votre navigateur.
-        </strong>
-
-
-        <h3>🤖 Android</h3>
-
-        <p>
-            1. Ouvrez les <b>Paramètres</b> du téléphone.<br><br>
-
-            2. Allez dans
-            <b>Applications → Facebook</b>.<br><br>
-
-            3. Ouvrez
-            <b>Ouvrir par défaut</b> ou
-            <b>Définir par défaut</b>.<br><br>
-
-            4. Désactivez
-            <b>Ouvrir les liens compatibles</b>
-            ou
-            <b>Ouvrir les liens pris en charge</b>.
-        </p>
-
-        <p>
-            ⚠️ Si plusieurs applications ou comptes
-            Facebook apparaissent sur votre téléphone,
-            faites cette manipulation pour chaque
-            application Facebook concernée.
-        </p>
-
-
-        <h3>🍎 iPhone / iPad</h3>
-
-        <p>
-            Sur iPhone, iOS ne propose pas le même
-            réglage qu'Android permettant de désactiver
-            définitivement tous les liens associés
-            à l'application Facebook.
-        </p>
-
-        <p>
-            Ouvrez le lien dans <b>Safari</b>.
-        </p>
-
-        <p>
-            Si nécessaire, effectuez un
-            <b>appui prolongé sur le lien</b>
-            puis choisissez
-            <b>Ouvrir dans un nouvel onglet</b>
-            lorsque cette option est proposée.
-        </p>
-
-        <p>
-            Revenez ensuite sur le convertisseur.
-        </p>
+        <button onclick="go()">
+            Convertir
+        </button>
 
     </div>
 
 
-    <p class="small">
-        Une fois sur Facebook Web, si vous récupérez
-        le véritable lien du profil, revenez ici
-        et collez-le ci-dessous.
+    <!-- RÉSULTAT SI TOUT FONCTIONNE -->
+
+    <div id="result" class="box success">
+
+        <div class="status">
+            ✅ Lien permanent trouvé
+        </div>
+
+        <div
+            id="finalUrl"
+            class="final-url">
+        </div>
+
+        <button
+            id="copyButton"
+            onclick="copyResult()">
+            📋 Copier le lien
+        </button>
+
+        <button
+            class="secondary"
+            onclick="resetConverter()">
+            ↻ Nouvelle conversion
+        </button>
+
+    </div>
+
+
+    <!-- MODE SECOURS UNIQUEMENT SI FACEBOOK BLOQUE -->
+
+    <div id="fallback" class="box warning">
+
+        <div class="status">
+            ⚠️ Facebook bloque la conversion
+        </div>
+
+        <p
+            id="reason"
+            class="small">
+        </p>
+
+        <input
+            type="hidden"
+            id="openfb_url"
+        >
+
+        <button onclick="ouvrirFacebook()">
+            🌐 Ouvrir Facebook Web
+        </button>
+
+        <button
+            class="help-button"
+            onclick="toggleHelp()">
+            📱 Facebook s'ouvre dans l'application ?
+        </button>
+
+
+        <!-- AIDE -->
+
+        <div
+            id="browserHelp"
+            class="browser-help">
+
+            <strong>
+                Facebook doit s'ouvrir dans votre navigateur.
+            </strong>
+
+            <h3>🤖 Android</h3>
+
+            <p>
+                Ouvrez <b>Paramètres → Applications → Facebook</b>.
+            </p>
+
+            <p>
+                Ouvrez ensuite
+                <b>Ouvrir par défaut</b>
+                ou
+                <b>Définir par défaut</b>.
+            </p>
+
+            <p>
+                Désactivez
+                <b>Ouvrir les liens compatibles</b>
+                ou
+                <b>Ouvrir les liens pris en charge</b>.
+            </p>
+
+            <p>
+                Si plusieurs applications Facebook sont installées,
+                faites cette manipulation pour chacune.
+            </p>
+
+
+            <h3>🍎 iPhone / iPad</h3>
+
+            <p>
+                iOS ne possède pas le même réglage permanent qu'Android.
+            </p>
+
+            <p>
+                Ouvrez le lien dans <b>Safari</b>.
+                Si nécessaire, faites un
+                <b>appui prolongé sur le lien</b>
+                et choisissez
+                <b>Ouvrir dans un nouvel onglet</b>
+                lorsque cette option est proposée.
+            </p>
+
+        </div>
+
+
+        <div class="separator"></div>
+
+        <p class="small">
+            Si tu récupères le véritable lien du profil sur Facebook,
+            colle-le ici :
+        </p>
+
+        <input
+            id="manual"
+            type="url"
+            placeholder="Lien du profil Facebook"
+        >
+
+        <button onclick="cleanManual()">
+            Analyser le lien
+        </button>
+
+        <button
+            class="secondary"
+            onclick="resetConverter()">
+            ↻ Recommencer
+        </button>
+
+    </div>
+
+
+    <p class="privacy">
+        🔒 Aucun mot de passe ni cookie Facebook n'est demandé.
     </p>
-
-
-    <input
-        id="manual"
-        type="url"
-        placeholder="Colle ici le lien du profil"
-    >
-
-
-    <button onclick="cleanManual()">
-        Analyser ce lien
-    </button>
-
-</div>
-
-
-<p class="muted">
-🔒 Aucun mot de passe ni cookie Facebook
-n'est demandé ou enregistré.
-</p>
 
 </main>
 
 
 <script>
 
+const mainForm =
+    document.getElementById("mainForm");
 
-const R =
+const result =
     document.getElementById("result");
 
-const F =
+const fallback =
     document.getElementById("fallback");
 
+let currentFinalUrl = "";
 
 
-/* ==============================
-   PROTECTION AFFICHAGE
-================================ */
+/* PROTECTION TEXTE */
 
 function esc(s) {
-
     return String(s).replace(
         /[&<>"']/g,
         c => ({
@@ -345,60 +358,181 @@ function esc(s) {
 }
 
 
+/* ==========================
+   CONVERSION
+========================== */
 
-/* ==============================
-   AIDE ANDROID / IPHONE
-================================ */
+async function go() {
 
-function toggleHelp() {
+    const url =
+        document
+            .getElementById("u")
+            .value
+            .trim();
 
-    const help =
-        document.getElementById(
-            "browserHelp"
-        );
+    if (!url) {
+        alert("Colle d'abord un lien Facebook.");
+        return;
+    }
 
-    if (
-        help.style.display === "block"
-    ) {
+    result.style.display = "none";
+    fallback.style.display = "none";
 
-        help.style.display =
-            "none";
+    const button =
+        mainForm.querySelector("button");
 
-    } else {
+    button.disabled = true;
+    button.textContent = "Conversion en cours…";
 
-        help.style.display =
-            "block";
+    try {
+
+        const response =
+            await fetch(
+                "/api/resolve",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        url: url
+                    })
+                }
+            );
+
+        const data =
+            await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.error ||
+                "Une erreur est survenue."
+            );
+        }
+
+        if (data.success) {
+
+            showSuccess(
+                data.final_url
+            );
+
+        } else {
+
+            showFallback(
+                data.message,
+                data.original_url || url
+            );
+        }
+
+    } catch (e) {
+
+        alert(e.message);
+
+    } finally {
+
+        button.disabled = false;
+        button.textContent = "Convertir";
     }
 }
 
 
+/* ==========================
+   SUCCÈS
+========================== */
 
-/* ==============================
-   OUVERTURE FACEBOOK WEB
-================================ */
+function showSuccess(url) {
+
+    currentFinalUrl = url;
+
+    mainForm.style.display = "none";
+    fallback.style.display = "none";
+
+    document
+        .getElementById("finalUrl")
+        .textContent = url;
+
+    result.style.display = "block";
+}
+
+
+/* COPIER */
+
+async function copyResult() {
+
+    try {
+
+        await navigator.clipboard
+            .writeText(currentFinalUrl);
+
+        const button =
+            document.getElementById(
+                "copyButton"
+            );
+
+        button.textContent =
+            "✅ Lien copié !";
+
+        setTimeout(() => {
+
+            button.textContent =
+                "📋 Copier le lien";
+
+        }, 1800);
+
+    } catch {
+
+        alert(
+            "Impossible de copier automatiquement le lien."
+        );
+    }
+}
+
+
+/* ==========================
+   MODE SECOURS
+========================== */
+
+function showFallback(
+    message,
+    original
+) {
+
+    mainForm.style.display = "none";
+    result.style.display = "none";
+
+    document
+        .getElementById("reason")
+        .textContent =
+        message ||
+        "Facebook n'a pas permis d'identifier automatiquement le profil.";
+
+    document
+        .getElementById("openfb_url")
+        .value =
+        original || "";
+
+    fallback.style.display = "block";
+}
+
+
+/* ==========================
+   FACEBOOK WEB
+========================== */
 
 function ouvrirFacebook() {
 
     let url =
-        document.getElementById(
-            "openfb_url"
-        ).value;
-
+        document
+            .getElementById("openfb_url")
+            .value;
 
     if (!url) {
-
-        alert(
-            "Aucun lien Facebook disponible."
-        );
-
+        alert("Aucun lien Facebook disponible.");
         return;
     }
-
-
-    /*
-       On remplace le domaine Facebook
-       par sa version Web mobile.
-    */
 
     try {
 
@@ -411,275 +545,42 @@ function ouvrirFacebook() {
         fbUrl.hostname =
             "m.facebook.com";
 
-        url =
-            fbUrl.toString();
+        window.open(
+            fbUrl.toString(),
+            "_blank",
+            "noopener,noreferrer"
+        );
 
     } catch {
 
         alert(
             "Le lien Facebook n'est pas valide."
         );
-
-        return;
     }
-
-
-    /*
-       Demande au navigateur
-       l'ouverture dans un nouvel onglet.
-    */
-
-    window.open(
-        url,
-        "_blank",
-        "noopener,noreferrer"
-    );
 }
 
 
+/* ==========================
+   AIDE
+========================== */
 
-/* ==============================
-   CONVERSION RÉUSSIE
-================================ */
+function toggleHelp() {
 
-function success(url) {
-
-    F.style.display =
-        "none";
-
-
-    R.className =
-        "box success";
-
-    R.style.display =
-        "block";
-
-
-    R.innerHTML =
-        '<div class="status">' +
-        '✅ Lien permanent trouvé' +
-        '</div>' +
-
-        '<div class="url">' +
-        esc(url) +
-        '</div>' +
-
-        '<button id="copy">' +
-        '📋 Copier le lien' +
-        '</button>' +
-
-        '<button id="openResult">' +
-        '🌐 Ouvrir le profil' +
-        '</button>';
-
-
-    /*
-       COPIER
-    */
-
-    document
-        .getElementById("copy")
-        .onclick =
-        async () => {
-
-            try {
-
-                await navigator.clipboard
-                    .writeText(url);
-
-                document
-                    .getElementById("copy")
-                    .textContent =
-                    "✅ Copié !";
-
-            } catch {
-
-                alert(
-                    "Impossible de copier automatiquement le lien."
-                );
-            }
-        };
-
-
-    /*
-       OUVRIR LE PROFIL
-    */
-
-    document
-        .getElementById("openResult")
-        .onclick =
-        () => {
-
-            let webUrl = url;
-
-            try {
-
-                const parsed =
-                    new URL(url);
-
-                parsed.hostname =
-                    "m.facebook.com";
-
-                webUrl =
-                    parsed.toString();
-
-            } catch {}
-
-
-            window.open(
-                webUrl,
-                "_blank",
-                "noopener,noreferrer"
-            );
-        };
-}
-
-
-
-/* ==============================
-   FACEBOOK BLOQUE
-================================ */
-
-function blocked(
-    message,
-    original
-) {
-
-    R.style.display =
-        "none";
-
-
-    F.style.display =
-        "block";
-
-
-    document
-        .getElementById("reason")
-        .textContent =
-
-        message ||
-
-        "Facebook bloque actuellement la résolution de ce lien.";
-
-
-    document
-        .getElementById(
-            "openfb_url"
-        ).value =
-
-        original || "";
-}
-
-
-
-/* ==============================
-   CONVERSION PRINCIPALE
-================================ */
-
-async function go() {
-
-    const url =
-        document
-            .getElementById("u")
-            .value
-            .trim();
-
-
-    if (!url) {
-
-        alert(
-            "Colle d'abord un lien Facebook."
+    const help =
+        document.getElementById(
+            "browserHelp"
         );
 
-        return;
-    }
-
-
-    F.style.display =
-        "none";
-
-
-    R.className =
-        "box";
-
-
-    R.style.display =
-        "block";
-
-
-    R.textContent =
-        "Recherche du véritable profil Facebook…";
-
-
-    try {
-
-        const response =
-            await fetch(
-                "/api/resolve",
-                {
-
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
-
-                    body:
-                        JSON.stringify({
-                            url: url
-                        })
-                }
-            );
-
-
-        const data =
-            await response.json();
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                data.error ||
-                "Une erreur est survenue."
-            );
-        }
-
-
-        if (data.success) {
-
-            success(
-                data.final_url
-            );
-
-        } else {
-
-            blocked(
-                data.message,
-                data.original_url || url
-            );
-        }
-
-    }
-
-    catch (e) {
-
-        R.className =
-            "box warning";
-
-        R.style.display =
-            "block";
-
-        R.textContent =
-            e.message;
-    }
+    help.style.display =
+        help.style.display === "block"
+        ? "none"
+        : "block";
 }
 
 
-
-/* ==============================
-   ANALYSE MANUELLE
-================================ */
+/* ==========================
+   LIEN RÉCUPÉRÉ MANUELLEMENT
+========================== */
 
 async function cleanManual() {
 
@@ -688,7 +589,6 @@ async function cleanManual() {
             .getElementById("manual")
             .value
             .trim();
-
 
     if (!url) {
 
@@ -699,24 +599,12 @@ async function cleanManual() {
         return;
     }
 
-
-    R.className =
-        "box";
-
-    R.style.display =
-        "block";
-
-    R.textContent =
-        "Analyse du lien…";
-
-
     try {
 
         const response =
             await fetch(
                 "/api/clean",
                 {
-
                     method: "POST",
 
                     headers: {
@@ -731,10 +619,8 @@ async function cleanManual() {
                 }
             );
 
-
         const data =
             await response.json();
-
 
         if (!response.ok) {
 
@@ -744,53 +630,71 @@ async function cleanManual() {
             );
         }
 
-
         if (data.success) {
 
-            success(
+            showSuccess(
                 data.final_url
             );
 
         } else {
 
-            R.className =
-                "box warning";
-
-            R.style.display =
-                "block";
-
-
-            R.innerHTML =
-
-                '<div class="status">' +
-                '⚠️ Impossible à convertir' +
-                '</div>' +
-
-                '<div class="small">' +
-
-                esc(
-                    data.message ||
-                    "Facebook bloque ce lien."
-                ) +
-
-                '</div>';
+            alert(
+                data.message ||
+                "Ce lien ne peut pas être converti."
+            );
         }
 
-    }
+    } catch (e) {
 
-    catch (e) {
-
-        R.className =
-            "box warning";
-
-        R.style.display =
-            "block";
-
-        R.textContent =
-            e.message;
+        alert(e.message);
     }
 }
 
+
+/* ==========================
+   RECOMMENCER
+========================== */
+
+function resetConverter() {
+
+    currentFinalUrl = "";
+
+    document
+        .getElementById("u")
+        .value = "";
+
+    document
+        .getElementById("manual")
+        .value = "";
+
+    document
+        .getElementById("browserHelp")
+        .style.display = "none";
+
+    result.style.display = "none";
+    fallback.style.display = "none";
+
+    mainForm.style.display = "block";
+
+    document
+        .getElementById("u")
+        .focus();
+}
+
+
+/* ENTRÉE = CONVERTIR */
+
+document
+    .getElementById("u")
+    .addEventListener(
+        "keydown",
+        function(e) {
+
+            if (e.key === "Enter") {
+                go();
+            }
+        }
+    );
 
 </script>
 
