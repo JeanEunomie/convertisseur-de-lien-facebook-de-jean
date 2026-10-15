@@ -3,9 +3,9 @@
 
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>Convertisseur Facebook</title>
+<title>Convertisseur de lien Facebook</title>
 
 <style>
 
@@ -15,646 +15,188 @@
 
 body {
     margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
     background: #0b1529;
     color: white;
-    font-family: system-ui, sans-serif;
-    min-height: 100vh;
-    display: grid;
-    place-items: center;
+
+    font-family:
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
     padding: 20px;
 }
 
 main {
-    width: min(600px, 100%);
+    width: 100%;
+    max-width: 650px;
+
     background: #1d2a40;
-    padding: 26px;
+
+    padding: 30px;
+
     border-radius: 22px;
 }
 
 h1 {
-    margin: 0 0 8px;
-    font-size: 2rem;
+    margin: 0 0 10px;
+
+    font-size: 2.3rem;
+    line-height: 1.1;
 }
 
-.intro {
-    margin: 0 0 20px;
+.description {
     color: #bdc7d8;
+
+    font-size: 16px;
+
+    line-height: 1.5;
+
+    margin-bottom: 25px;
 }
 
 input {
     width: 100%;
+
     padding: 16px;
+
     border-radius: 13px;
+
     border: 1px solid #526078;
+
     background: #0d172b;
+
     color: white;
+
     font-size: 16px;
+
+    outline: none;
+}
+
+input:focus {
+    border-color: #1877f2;
 }
 
 button {
     width: 100%;
+
     padding: 15px;
-    margin-top: 12px;
-    border: 0;
+
+    margin-top: 14px;
+
+    border: none;
+
     border-radius: 13px;
+
     background: #1877f2;
+
     color: white;
+
     font-size: 16px;
+
     font-weight: 800;
+
     cursor: pointer;
 }
 
+button:active {
+    opacity: 0.8;
+}
+
 button:disabled {
-    opacity: .6;
+    opacity: 0.6;
+    cursor: default;
 }
 
-.secondary {
-    background: transparent;
-    border: 1px solid #526078;
-    color: #bdc7d8;
-}
+#result {
+    display: none;
 
-.box {
-    margin-top: 20px;
+    margin-top: 22px;
+
     padding: 20px;
-    border-radius: 15px;
-    background: #0d172b;
-}
 
-.success {
+    border-radius: 15px;
+
+    background: #0d172b;
+
     border: 1px solid #3b8f65;
 }
 
-.warning {
-    border: 1px solid #a77a35;
-}
-
-#result,
-#fallback {
-    display: none;
-}
-
-.status {
+.result-title {
     font-size: 19px;
+
     font-weight: 800;
-    margin-bottom: 14px;
+
+    margin-bottom: 13px;
 }
 
-.final-url {
-    background: #162239;
+.result-url {
     padding: 14px;
+
+    background: #162239;
+
     border-radius: 10px;
+
     word-break: break-all;
+
     line-height: 1.5;
 }
 
-.instructions {
-    color: #bdc7d8;
-    line-height: 1.55;
-    margin: 0 0 15px;
-}
-
-.step {
-    margin-top: 20px;
-    font-weight: 800;
-}
-
-.help {
+#error {
     display: none;
-    margin-top: 14px;
-    padding: 15px;
-    background: #162239;
-    border-radius: 12px;
-    color: #bdc7d8;
-    font-size: 14px;
-    line-height: 1.6;
-}
 
-.help strong {
-    color: white;
-}
-
-.privacy {
-    text-align: center;
-    color: #8492a8;
-    font-size: 12px;
     margin-top: 20px;
+
+    padding: 16px;
+
+    border-radius: 13px;
+
+    background: #0d172b;
+
+    border: 1px solid #a77a35;
+
+    color: #e3c993;
+
+    line-height: 1.5;
+}
+
+.info {
+    margin-top: 22px;
+
+    text-align: center;
+
+    color: #8492a8;
+
+    font-size: 13px;
 }
 
 </style>
+
 </head>
+
 
 <body>
 
 <main>
 
-    <h1>Convertisseur Facebook</h1>
-
-    <p class="intro">
-        Colle ton lien Facebook.
-    </p>
+    <h1>
+        Convertisseur Facebook
+    </h1>
 
 
-    <!-- ÉCRAN DE DÉPART -->
-
-    <div id="mainForm">
-
-        <input
-            id="u"
-            type="url"
-            placeholder="https://www.facebook.com/share/..."
-        >
-
-        <button
-            id="convertButton"
-            onclick="go()">
-            Convertir
-        </button>
-
+    <div class="description">
+        Colle un lien Facebook
+        <b>/share/…</b>
+        pour retrouver le lien du profil.
     </div>
 
 
-    <!-- CONVERSION RÉUSSIE -->
-
-    <div
-        id="result"
-        class="box success">
-
-        <div class="status">
-            ✅ Lien trouvé
-        </div>
-
-        <div
-            id="finalUrl"
-            class="final-url">
-        </div>
-
-        <button
-            id="copyButton"
-            onclick="copyResult()">
-            📋 Copier le lien
-        </button>
-
-        <button
-            class="secondary"
-            onclick="resetConverter()">
-            ↻ Nouvelle conversion
-        </button>
-
-    </div>
-
-
-    <!-- MODE DE SECOURS -->
-
-    <div
-        id="fallback"
-        class="box warning">
-
-        <div class="status">
-            Facebook doit ouvrir le lien une fois
-        </div>
-
-        <p class="instructions">
-            Ouvre le profil Facebook avec le bouton ci-dessous.
-        </p>
-
-        <input
-            type="hidden"
-            id="openfb_url"
-        >
-
-        <button onclick="ouvrirFacebook()">
-            🌐 Ouvrir le profil
-        </button>
-
-
-        <button
-            class="secondary"
-            onclick="toggleHelp()">
-            📱 Facebook s'ouvre dans l'application ?
-        </button>
-
-
-        <div
-            id="help"
-            class="help">
-
-            <strong>Android</strong><br>
-            Paramètres → Applications → Facebook →
-            Ouvrir par défaut, puis désactive
-            <b>Ouvrir les liens compatibles</b>.
-
-            <br><br>
-
-            Si tu as plusieurs applications Facebook,
-            fais-le pour chacune.
-
-            <br><br>
-
-            <strong>iPhone / iPad</strong><br>
-            Ouvre le lien dans Safari.
-            Si nécessaire, fais un appui prolongé
-            sur le lien et choisis
-            <b>Ouvrir dans un nouvel onglet</b>.
-
-        </div>
-
-
-        <div class="step">
-            Ensuite, colle ici le lien obtenu :
-        </div>
-
-        <p class="instructions">
-            Reviens sur cette page après avoir récupéré
-            le lien du profil.
-        </p>
-
-        <input
-            id="manual"
-            type="url"
-            placeholder="https://www.facebook.com/..."
-        >
-
-        <button
-            id="finishButton"
-            onclick="cleanManual()">
-            Terminer
-        </button>
-
-        <button
-            class="secondary"
-            onclick="resetConverter()">
-            ↻ Recommencer
-        </button>
-
-    </div>
-
-
-    <p class="privacy">
-        🔒 Aucun mot de passe ni cookie Facebook n'est demandé.
-    </p>
-
-</main>
-
-
-<script>
-
-const mainForm =
-    document.getElementById("mainForm");
-
-const result =
-    document.getElementById("result");
-
-const fallback =
-    document.getElementById("fallback");
-
-let currentFinalUrl = "";
-
-
-/* CONVERSION */
-
-async function go() {
-
-    const url =
-        document.getElementById("u")
-        .value
-        .trim();
-
-    if (!url) {
-        alert("Colle d'abord un lien Facebook.");
-        return;
-    }
-
-    const button =
-        document.getElementById("convertButton");
-
-    button.disabled = true;
-    button.textContent = "Recherche…";
-
-    try {
-
-        const response =
-            await fetch("/api/resolve", {
-
-                method: "POST",
-
-                headers: {
-                    "Content-Type":
-                        "application/json"
-                },
-
-                body: JSON.stringify({
-                    url: url
-                })
-            });
-
-
-        const data =
-            await response.json();
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                data.error ||
-                "Une erreur est survenue."
-            );
-        }
-
-
-        if (data.success) {
-
-            showSuccess(
-                data.final_url
-            );
-
-        } else {
-
-            showFallback(
-                data.original_url || url
-            );
-        }
-
-    } catch (e) {
-
-        alert(e.message);
-
-    } finally {
-
-        button.disabled = false;
-        button.textContent = "Convertir";
-    }
-}
-
-
-/* SUCCÈS */
-
-function showSuccess(url) {
-
-    currentFinalUrl = url;
-
-    mainForm.style.display = "none";
-    fallback.style.display = "none";
-
-    document.getElementById(
-        "finalUrl"
-    ).textContent = url;
-
-    result.style.display = "block";
-}
-
-
-/* COPIE */
-
-async function copyResult() {
-
-    try {
-
-        await navigator.clipboard.writeText(
-            currentFinalUrl
-        );
-
-        const button =
-            document.getElementById(
-                "copyButton"
-            );
-
-        button.textContent =
-            "✅ Copié !";
-
-        setTimeout(() => {
-
-            button.textContent =
-                "📋 Copier le lien";
-
-        }, 1500);
-
-    } catch {
-
-        alert(
-            "Impossible de copier automatiquement."
-        );
-    }
-}
-
-
-/* MODE DE SECOURS */
-
-function showFallback(original) {
-
-    mainForm.style.display = "none";
-    result.style.display = "none";
-
-    document.getElementById(
-        "openfb_url"
-    ).value = original;
-
-    fallback.style.display = "block";
-}
-
-
-/* OUVRIR FACEBOOK */
-
-function ouvrirFacebook() {
-
-    let url =
-        document.getElementById(
-            "openfb_url"
-        ).value;
-
-    if (!url) {
-        return;
-    }
-
-    try {
-
-        const fbUrl =
-            new URL(url);
-
-        fbUrl.protocol = "https:";
-
-        /*
-        Version Web mobile.
-        Cela réduit certains passages
-        automatiques vers l'application,
-        sans pouvoir les empêcher à 100 %.
-        */
-
-        fbUrl.hostname =
-            "m.facebook.com";
-
-        window.open(
-            fbUrl.toString(),
-            "_blank",
-            "noopener,noreferrer"
-        );
-
-    } catch {
-
-        alert(
-            "Le lien Facebook n'est pas valide."
-        );
-    }
-}
-
-
-/* AIDE */
-
-function toggleHelp() {
-
-    const help =
-        document.getElementById("help");
-
-    help.style.display =
-        help.style.display === "block"
-        ? "none"
-        : "block";
-}
-
-
-/* LIEN RÉCUPÉRÉ */
-
-async function cleanManual() {
-
-    const url =
-        document.getElementById(
-            "manual"
-        ).value.trim();
-
-    if (!url) {
-
-        alert(
-            "Colle le lien récupéré sur Facebook."
-        );
-
-        return;
-    }
-
-
-    const button =
-        document.getElementById(
-            "finishButton"
-        );
-
-    button.disabled = true;
-    button.textContent =
-        "Analyse…";
-
-
-    try {
-
-        const response =
-            await fetch("/api/clean", {
-
-                method: "POST",
-
-                headers: {
-                    "Content-Type":
-                        "application/json"
-                },
-
-                body:
-                    JSON.stringify({
-                        url: url
-                    })
-            });
-
-
-        const data =
-            await response.json();
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                data.error ||
-                "Une erreur est survenue."
-            );
-        }
-
-
-        if (data.success) {
-
-            showSuccess(
-                data.final_url
-            );
-
-        } else {
-
-            alert(
-                data.message ||
-                "Facebook a encore fourni un lien de partage. Essaie de récupérer directement l'adresse du profil."
-            );
-        }
-
-    } catch (e) {
-
-        alert(e.message);
-
-    } finally {
-
-        button.disabled = false;
-        button.textContent =
-            "Terminer";
-    }
-}
-
-
-/* RECOMMENCER */
-
-function resetConverter() {
-
-    currentFinalUrl = "";
-
-    document.getElementById(
-        "u"
-    ).value = "";
-
-    document.getElementById(
-        "manual"
-    ).value = "";
-
-    document.getElementById(
-        "help"
-    ).style.display = "none";
-
-    result.style.display = "none";
-    fallback.style.display = "none";
-
-    mainForm.style.display = "block";
-
-    document.getElementById(
-        "u"
-    ).focus();
-}
-
-
-/* TOUCHE ENTRÉE */
-
-document.getElementById("u")
-.addEventListener(
-    "keydown",
-    function(e) {
-
-        if (e.key === "Enter") {
-            go();
-        }
-    }
-);
-
-
-document.getElementById("manual")
-.addEventListener(
-    "keydown",
-    function(e) {
-
-        if (e.key === "Enter") {
-            cleanManual();
-        }
-    }
-);
-
-</script>
-
-</body>
-</html>
+    <input
+        id="url"
+        type="
