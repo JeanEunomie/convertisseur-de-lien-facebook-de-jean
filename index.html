@@ -57,6 +57,10 @@ button,.open-link{
     text-decoration:none;
 }
 
+.help-button{
+    background:#334155;
+}
+
 #r{
     display:none;
     margin-top:18px;
@@ -81,6 +85,20 @@ button,.open-link{
     border-radius:10px;
     font-size:14px;
     line-height:1.5;
+}
+
+#appHelp{
+    display:none;
+    margin-top:12px;
+    padding:15px;
+    background:#1e293b;
+    border-radius:10px;
+    font-size:14px;
+    line-height:1.5;
+}
+
+#appHelp h3{
+    margin-top:5px;
 }
 
 .muted{
@@ -119,6 +137,21 @@ const esc=s=>s.replace(/[&<>"']/g,c=>({
     "'":'&#39;'
 }[c]));
 
+function toggleHelp(){
+
+    const help=document.getElementById('appHelp');
+    const button=document.getElementById('helpBtn');
+
+    if(help.style.display==='block'){
+        help.style.display='none';
+        button.textContent="📱 Le lien s'ouvre dans l'application Facebook ?";
+    }
+    else{
+        help.style.display='block';
+        button.textContent="Masquer les explications";
+    }
+}
+
 async function go(){
 
     const b=document.getElementById('r');
@@ -145,7 +178,7 @@ async function go(){
         if(!x.ok)
             throw Error(d.error||'Erreur');
 
-        /* Facebook renvoie vers LOGIN */
+        /* FACEBOOK RENVOIE LOGIN */
 
         if(
             d.final_url &&
@@ -162,7 +195,7 @@ async function go(){
 
                     <p>
                     Le lien n'a pas pu être converti automatiquement.
-                    Tu peux l'ouvrir directement dans ton navigateur.
+                    Ouvre-le directement dans ton navigateur.
                     </p>
 
                     <a
@@ -175,13 +208,76 @@ async function go(){
                     </a>
 
                     <div class="instructions">
+
                         <b>Ensuite :</b><br><br>
 
                         1. Attends que le profil Facebook s'affiche.<br><br>
 
-                        2. Appuie sur la <b>barre d'adresse de ton navigateur</b>.<br><br>
+                        2. Appuie sur la <b>barre d'adresse du navigateur</b>.<br><br>
 
                         3. <b>Copie le lien affiché dans la barre d'adresse.</b>
+
+                    </div>
+
+                    <button
+                        id="helpBtn"
+                        class="help-button"
+                        onclick="toggleHelp()"
+                    >
+                        📱 Le lien s'ouvre dans l'application Facebook ?
+                    </button>
+
+                    <div id="appHelp">
+
+                        <h3>Si Facebook s'ouvre automatiquement dans l'application</h3>
+
+                        <p>
+                        Pour récupérer le lien présent dans la barre d'adresse,
+                        il faut ouvrir Facebook dans ton <b>navigateur internet</b>
+                        plutôt que dans l'application.
+                        </p>
+
+                        <b>🤖 Sur Android</b>
+
+                        <p>
+                        Selon ton téléphone :
+                        </p>
+
+                        <p>
+                        1. Fais un appui long sur le bouton
+                        <b>« Ouvrir le lien Facebook »</b>.<br><br>
+
+                        2. Choisis <b>« Ouvrir dans un nouvel onglet »</b>
+                        ou <b>« Ouvrir dans le navigateur »</b> si cette option apparaît.<br><br>
+
+                        3. Si Facebook continue à s'ouvrir automatiquement dans
+                        l'application, va dans les <b>Paramètres Android</b> →
+                        <b>Applications</b> → <b>Facebook</b> →
+                        <b>Ouvrir par défaut</b>.<br><br>
+
+                        4. Désactive l'ouverture automatique des
+                        <b>liens compatibles</b>.<br><br>
+
+                        5. Reviens sur cette page et ouvre de nouveau le lien.
+                        </p>
+
+                        <b>🍎 Sur iPhone / iPad</b>
+
+                        <p>
+                        1. Fais un appui long sur
+                        <b>« Ouvrir le lien Facebook »</b>.<br><br>
+
+                        2. Choisis <b>« Ouvrir dans un nouvel onglet »</b>
+                        lorsque cette option est proposée.<br><br>
+
+                        3. Si Facebook bascule quand même vers l'application,
+                        copie le lien puis colle-le directement dans
+                        <b>la barre d'adresse de Safari</b>.<br><br>
+
+                        4. Une fois le profil affiché dans Safari,
+                        copie l'adresse présente dans la barre d'adresse.
+                        </p>
+
                     </div>
 
                 </div>
@@ -190,7 +286,7 @@ async function go(){
             return;
         }
 
-        /* Résultat normal */
+        /* RESULTAT NORMAL */
 
         b.innerHTML=
             '<b>Lien final :</b><br>'+
