@@ -58,10 +58,11 @@ def clean_facebook_url(url):
 
 
 def try_people_numeric(url):
+
     try:
         p = urlparse(url)
 
-        # Seulement pour les liens /people/
+        # On ne fait cette recherche que pour /people/
         if not p.path.lower().startswith("/people/"):
             return None
 
@@ -76,7 +77,6 @@ def try_people_numeric(url):
 
         # Vérifie si Facebook redirige vers profile.php?id=
         final_url = r.url
-
         fp = urlparse(final_url)
         fqs = parse_qs(fp.query)
 
@@ -89,7 +89,7 @@ def try_people_numeric(url):
             if fb_id.isdigit():
                 return fb_id
 
-        # Recherche dans le HTML
+        # Sinon on cherche l'ID dans le contenu Facebook
         page = html.unescape(r.text)
 
         patterns = [
@@ -100,6 +100,7 @@ def try_people_numeric(url):
         ]
 
         for pattern in patterns:
+
             match = re.search(
                 pattern,
                 page,
@@ -117,6 +118,7 @@ def try_people_numeric(url):
 
 @app.get("/")
 def index():
+
     return send_from_directory(
         ".",
         "index.html"
@@ -125,16 +127,19 @@ def index():
 
 @app.post("/api/resolve")
 def resolve():
+
     url = (
         request.get_json(silent=True) or {}
     ).get("url", "").strip()
 
     if not facebook_url(url):
+
         return jsonify(
             error="Colle un lien Facebook valide."
         ), 400
 
     try:
+
         current = url
 
         # Suit les redirections Facebook
@@ -157,6 +162,7 @@ def resolve():
                 )
 
                 if not facebook_url(nxt):
+
                     return jsonify(
                         error="La redirection quitte Facebook."
                     ), 400
@@ -176,8 +182,10 @@ def resolve():
             fb_id = try_people_numeric(cleaned)
 
             if fb_id:
+
                 cleaned = (
-                    "https://www.facebook.com/profile.php?id="
+                    "https://www.facebook.com/"
+                    "profile.php?id="
                     + fb_id
                 )
 
@@ -186,6 +194,7 @@ def resolve():
         )
 
     except requests.RequestException:
+
         return jsonify(
             error="Facebook n'a pas permis de résoudre ce lien."
         ), 502
