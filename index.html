@@ -1,660 +1,404 @@
-<!doctype html>
-<html lang="fr">
+from flask import Flask, request, jsonify, send_from_directory
+import requests
+import re
+import html
+from urllib.parse import urlparse, parse_qs, urlencode, unquote
 
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+app = Flask(__name__)
 
-<title>Convertisseur Facebook</title>
-
-<style>
-
-* {
-    box-sizing: border-box;
+HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Linux; Android 13) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/120.0 Mobile Safari/537.36"
+    ),
+    "Accept-Language": "fr-FR,fr;q=0.9,en;q=0.8",
 }
 
-body {
-    margin: 0;
-    background: #0b1529;
-    color: white;
-    font-family: system-ui, sans-serif;
-    min-height: 100vh;
-    display: grid;
-    place-items: center;
-    padding: 20px;
-}
-
-main {
-    width: min(600px, 100%);
-    background: #1d2a40;
-    padding: 26px;
-    border-radius: 22px;
-}
-
-h1 {
-    margin: 0 0 8px;
-    font-size: 2rem;
-}
-
-.intro {
-    margin: 0 0 20px;
-    color: #bdc7d8;
-}
-
-input {
-    width: 100%;
-    padding: 16px;
-    border-radius: 13px;
-    border: 1px solid #526078;
-    background: #0d172b;
-    color: white;
-    font-size: 16px;
-}
-
-button {
-    width: 100%;
-    padding: 15px;
-    margin-top: 12px;
-    border: 0;
-    border-radius: 13px;
-    background: #1877f2;
-    color: white;
-    font-size: 16px;
-    font-weight: 800;
-    cursor: pointer;
-}
-
-button:disabled {
-    opacity: .6;
-}
-
-.secondary {
-    background: transparent;
-    border: 1px solid #526078;
-    color: #bdc7d8;
-}
-
-.box {
-    margin-top: 20px;
-    padding: 20px;
-    border-radius: 15px;
-    background: #0d172b;
-}
-
-.success {
-    border: 1px solid #3b8f65;
-}
-
-.warning {
-    border: 1px solid #a77a35;
-}
-
-#result,
-#fallback {
-    display: none;
-}
-
-.status {
-    font-size: 19px;
-    font-weight: 800;
-    margin-bottom: 14px;
-}
-
-.final-url {
-    background: #162239;
-    padding: 14px;
-    border-radius: 10px;
-    word-break: break-all;
-    line-height: 1.5;
-}
-
-.instructions {
-    color: #bdc7d8;
-    line-height: 1.55;
-    margin: 0 0 15px;
-}
-
-.step {
-    margin-top: 20px;
-    font-weight: 800;
-}
 
-.help {
-    display: none;
-    margin-top: 14px;
-    padding: 15px;
-    background: #162239;
-    border-radius: 12px;
-    color: #bdc7d8;
-    font-size: 14px;
-    line-height: 1.6;
-}
+# =========================================================
+# Vérifier qu'il s'agit bien d'un lien Facebook
+# =========================================================
 
-.help strong {
-    color: white;
-}
+def is_facebook(url):
 
-.privacy {
-    text-align: center;
-    color: #8492a8;
-    font-size: 12px;
-    margin-top: 20px;
-}
+    try:
 
-</style>
-</head>
+        p = urlparse(url)
 
-<body>
+        host = (p.hostname or "").lower()
 
-<main>
+        return (
+            p.scheme in ("http", "https")
+            and (
+                host == "facebook.com"
+                or host.endswith(".facebook.com")
+                or host == "fb.com"
+                or host.endswith(".fb.com")
+            )
+        )
 
-    <h1>Convertisseur Facebook</h1>
+    except Exception:
 
-    <p class="intro">
-        Colle ton lien Facebook.
-    </p>
+        return False
 
 
-    <!-- ÉCRAN DE DÉPART -->
+# =========================================================
+# Nettoyer une URL Facebook
+# =========================================================
 
-    <div id="mainForm">
+def clean_facebook_url(url):
 
-        <input
-            id="u"
-            type="url"
-            placeholder="https://www.facebook.com/share/..."
-        >
+    p = urlparse(url)
 
-        <button
-            id="convertButton"
-            onclick="go()">
-            Convertir
-        </button>
+    qs = parse_qs(p.query)
 
-    </div>
+    path = unquote(
+        p.path.rstrip("/") or "/"
+    )
 
 
-    <!-- CONVERSION RÉUSSIE -->
+    # -----------------------------------------
+    # CAS :
+    # profile.php?id=123456
+    # -----------------------------------------
 
-    <div
-        id="result"
-        class="box success">
+    if path.lower() == "/profile.php":
 
-        <div class="status">
-            ✅ Lien trouvé
-        </div>
+        ids = qs.get("id")
 
-        <div
-            id="finalUrl"
-            class="final-url">
-        </div>
+        if ids and ids[0].isdigit():
 
-        <button
-            id="copyButton"
-            onclick="copyResult()">
-            📋 Copier le lien
-        </button>
+            return (
+                "https://www.facebook.com/"
+                "profile.php?id="
+                + ids[0]
+            )
 
-        <button
-            class="secondary"
-            onclick="resetConverter()">
-            ↻ Nouvelle conversion
-        </button>
 
-    </div>
+    # -----------------------------------------
+    # Autres profils
+    # -----------------------------------------
 
+    keep = {}
 
-    <!-- MODE DE SECOURS -->
+    for key in (
+        "id",
+        "story_fbid",
+        "fbid",
+        "v"
+    ):
 
-    <div
-        id="fallback"
-        class="box warning">
+        if qs.get(key):
 
-        <div class="status">
-            Facebook doit ouvrir le lien une fois
-        </div>
+            keep[key] = qs[key][0]
 
-        <p class="instructions">
-            Ouvre le profil Facebook avec le bouton ci-dessous.
-        </p>
 
-        <input
-            type="hidden"
-            id="openfb_url"
-        >
+    result = (
+        "https://www.facebook.com"
+        + path
+    )
 
-        <button onclick="ouvrirFacebook()">
-            🌐 Ouvrir le profil
-        </button>
 
+    if keep:
 
-        <button
-            class="secondary"
-            onclick="toggleHelp()">
-            📱 Facebook s'ouvre dans l'application ?
-        </button>
+        result += (
+            "?"
+            + urlencode(keep)
+        )
 
 
-        <div
-            id="help"
-            class="help">
+    return result
 
-            <strong>Android</strong><br>
-            Paramètres → Applications → Facebook →
-            Ouvrir par défaut, puis désactive
-            <b>Ouvrir les liens compatibles</b>.
 
-            <br><br>
+# =========================================================
+# Chercher un ID numérique Facebook dans la page
+# =========================================================
 
-            Si tu as plusieurs applications Facebook,
-            fais-le pour chacune.
+def extract_numeric_id(text):
 
-            <br><br>
+    if not text:
 
-            <strong>iPhone / iPad</strong><br>
-            Ouvre le lien dans Safari.
-            Si nécessaire, fais un appui prolongé
-            sur le lien et choisis
-            <b>Ouvrir dans un nouvel onglet</b>.
+        return None
 
-        </div>
 
+    text = html.unescape(text)
 
-        <div class="step">
-            Ensuite, colle ici le lien obtenu :
-        </div>
 
-        <p class="instructions">
-            Reviens sur cette page après avoir récupéré
-            le lien du profil.
-        </p>
+    patterns = [
 
-        <input
-            id="manual"
-            type="url"
-            placeholder="https://www.facebook.com/..."
-        >
+        r'"userID"\s*:\s*"(\d{8,25})"',
 
-        <button
-            id="finishButton"
-            onclick="cleanManual()">
-            Terminer
-        </button>
+        r'"user_id"\s*:\s*"(\d{8,25})"',
 
-        <button
-            class="secondary"
-            onclick="resetConverter()">
-            ↻ Recommencer
-        </button>
+        r'"profile_id"\s*:\s*"(\d{8,25})"',
 
-    </div>
+        r'profile\.php\?id=(\d{8,25})',
 
+    ]
 
-    <p class="privacy">
-        🔒 Aucun mot de passe ni cookie Facebook n'est demandé.
-    </p>
 
-</main>
+    for pattern in patterns:
 
+        match = re.search(
+            pattern,
+            text,
+            re.I
+        )
 
-<script>
 
-const mainForm =
-    document.getElementById("mainForm");
+        if match:
 
-const result =
-    document.getElementById("result");
+            return match.group(1)
 
-const fallback =
-    document.getElementById("fallback");
 
-let currentFinalUrl = "";
+    return None
 
 
-/* CONVERSION */
+# =========================================================
+# Chercher un lien /people/.../pfbid...
+# =========================================================
 
-async function go() {
+def extract_people_url(text):
 
-    const url =
-        document.getElementById("u")
-        .value
-        .trim();
+    if not text:
 
-    if (!url) {
-        alert("Colle d'abord un lien Facebook.");
-        return;
-    }
+        return None
 
-    const button =
-        document.getElementById("convertButton");
 
-    button.disabled = true;
-    button.textContent = "Recherche…";
+    text = html.unescape(text)
 
-    try {
+    text = text.replace(
+        "\\/",
+        "/"
+    )
 
-        const response =
-            await fetch("/api/resolve", {
+    text = text.replace(
+        "\\u0026",
+        "&"
+    )
 
-                method: "POST",
 
-                headers: {
-                    "Content-Type":
-                        "application/json"
-                },
+    match = re.search(
 
-                body: JSON.stringify({
-                    url: url
-                })
-            });
+        r'https?://(?:www\.)?facebook\.com'
+        r'(/people/[^"\'<>\s]+/pfbid[a-zA-Z0-9]+)',
 
+        text,
 
-        const data =
-            await response.json();
+        re.I
+    )
 
 
-        if (!response.ok) {
+    if match:
 
-            throw new Error(
-                data.error ||
-                "Une erreur est survenue."
-            );
+        return clean_facebook_url(
+
+            "https://www.facebook.com"
+            + match.group(1)
+        )
+
+
+    return None
+
+
+# =========================================================
+# Résoudre le lien Facebook
+# =========================================================
+
+def resolve_facebook(original):
+
+    session = requests.Session()
+
+    session.headers.update(
+        HEADERS
+    )
+
+
+    try:
+
+        response = session.get(
+
+            original,
+
+            allow_redirects=True,
+
+            timeout=15
+        )
+
+
+    except requests.RequestException:
+
+        return {
+            "success": False,
+            "error":
+                "Impossible de contacter Facebook."
         }
 
 
-        if (data.success) {
+    # =====================================================
+    # 1 - Chercher un ID numérique dans la page
+    # =====================================================
 
-            showSuccess(
-                data.final_url
-            );
+    numeric_id = extract_numeric_id(
+        response.text
+    )
 
-        } else {
 
-            showFallback(
-                data.original_url || url
-            );
-        }
+    if numeric_id:
 
-    } catch (e) {
+        return {
 
-        alert(e.message);
+            "success": True,
 
-    } finally {
+            "url":
+                "https://www.facebook.com/"
+                "profile.php?id="
+                + numeric_id,
 
-        button.disabled = false;
-        button.textContent = "Convertir";
-    }
-}
-
-
-/* SUCCÈS */
-
-function showSuccess(url) {
-
-    currentFinalUrl = url;
-
-    mainForm.style.display = "none";
-    fallback.style.display = "none";
-
-    document.getElementById(
-        "finalUrl"
-    ).textContent = url;
-
-    result.style.display = "block";
-}
-
-
-/* COPIE */
-
-async function copyResult() {
-
-    try {
-
-        await navigator.clipboard.writeText(
-            currentFinalUrl
-        );
-
-        const button =
-            document.getElementById(
-                "copyButton"
-            );
-
-        button.textContent =
-            "✅ Copié !";
-
-        setTimeout(() => {
-
-            button.textContent =
-                "📋 Copier le lien";
-
-        }, 1500);
-
-    } catch {
-
-        alert(
-            "Impossible de copier automatiquement."
-        );
-    }
-}
-
-
-/* MODE DE SECOURS */
-
-function showFallback(original) {
-
-    mainForm.style.display = "none";
-    result.style.display = "none";
-
-    document.getElementById(
-        "openfb_url"
-    ).value = original;
-
-    fallback.style.display = "block";
-}
-
-
-/* OUVRIR FACEBOOK */
-
-function ouvrirFacebook() {
-
-    let url =
-        document.getElementById(
-            "openfb_url"
-        ).value;
-
-    if (!url) {
-        return;
-    }
-
-    try {
-
-        const fbUrl =
-            new URL(url);
-
-        fbUrl.protocol = "https:";
-
-        /*
-        Version Web mobile.
-        Cela réduit certains passages
-        automatiques vers l'application,
-        sans pouvoir les empêcher à 100 %.
-        */
-
-        fbUrl.hostname =
-            "m.facebook.com";
-
-        window.open(
-            fbUrl.toString(),
-            "_blank",
-            "noopener,noreferrer"
-        );
-
-    } catch {
-
-        alert(
-            "Le lien Facebook n'est pas valide."
-        );
-    }
-}
-
-
-/* AIDE */
-
-function toggleHelp() {
-
-    const help =
-        document.getElementById("help");
-
-    help.style.display =
-        help.style.display === "block"
-        ? "none"
-        : "block";
-}
-
-
-/* LIEN RÉCUPÉRÉ */
-
-async function cleanManual() {
-
-    const url =
-        document.getElementById(
-            "manual"
-        ).value.trim();
-
-    if (!url) {
-
-        alert(
-            "Colle le lien récupéré sur Facebook."
-        );
-
-        return;
-    }
-
-
-    const button =
-        document.getElementById(
-            "finishButton"
-        );
-
-    button.disabled = true;
-    button.textContent =
-        "Analyse…";
-
-
-    try {
-
-        const response =
-            await fetch("/api/clean", {
-
-                method: "POST",
-
-                headers: {
-                    "Content-Type":
-                        "application/json"
-                },
-
-                body:
-                    JSON.stringify({
-                        url: url
-                    })
-            });
-
-
-        const data =
-            await response.json();
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                data.error ||
-                "Une erreur est survenue."
-            );
+            "method":
+                "numeric_id"
         }
 
 
-        if (data.success) {
+    # =====================================================
+    # 2 - Chercher un lien /people/
+    # =====================================================
 
-            showSuccess(
-                data.final_url
-            );
+    people_url = extract_people_url(
+        response.text
+    )
 
-        } else {
 
-            alert(
-                data.message ||
-                "Facebook a encore fourni un lien de partage. Essaie de récupérer directement l'adresse du profil."
-            );
+    if people_url:
+
+        return {
+
+            "success": True,
+
+            "url":
+                people_url,
+
+            "method":
+                "people"
         }
 
-    } catch (e) {
 
-        alert(e.message);
+    # =====================================================
+    # 3 - Utiliser simplement la redirection Facebook
+    # =====================================================
 
-    } finally {
-
-        button.disabled = false;
-        button.textContent =
-            "Terminer";
-    }
-}
+    final_url = response.url
 
 
-/* RECOMMENCER */
+    if is_facebook(final_url):
 
-function resetConverter() {
+        return {
 
-    currentFinalUrl = "";
+            "success": True,
 
-    document.getElementById(
-        "u"
-    ).value = "";
+            "url":
+                clean_facebook_url(
+                    final_url
+                ),
 
-    document.getElementById(
-        "manual"
-    ).value = "";
-
-    document.getElementById(
-        "help"
-    ).style.display = "none";
-
-    result.style.display = "none";
-    fallback.style.display = "none";
-
-    mainForm.style.display = "block";
-
-    document.getElementById(
-        "u"
-    ).focus();
-}
-
-
-/* TOUCHE ENTRÉE */
-
-document.getElementById("u")
-.addEventListener(
-    "keydown",
-    function(e) {
-
-        if (e.key === "Enter") {
-            go();
+            "method":
+                "redirect"
         }
+
+
+    return {
+
+        "success": False,
+
+        "error":
+            "Impossible de retrouver le profil Facebook."
     }
-);
 
 
-document.getElementById("manual")
-.addEventListener(
-    "keydown",
-    function(e) {
+# =========================================================
+# Page principale
+# =========================================================
 
-        if (e.key === "Enter") {
-            cleanManual();
-        }
-    }
-);
+@app.get("/")
+def home():
 
-</script>
+    return send_from_directory(
+        ".",
+        "index.html"
+    )
 
-</body>
-</html>
+
+# =========================================================
+# API
+# =========================================================
+
+@app.post("/api/resolve")
+def resolve():
+
+    data = (
+        request.get_json(silent=True)
+        or {}
+    )
+
+
+    original = (
+        data.get("url", "")
+        .strip()
+    )
+
+
+    if not is_facebook(original):
+
+        return jsonify(
+
+            success=False,
+
+            error=
+                "Colle un lien Facebook valide."
+
+        ), 400
+
+
+    result = resolve_facebook(
+        original
+    )
+
+
+    if result.get("success"):
+
+        return jsonify(
+
+            success=True,
+
+            final_url=
+                result["url"],
+
+            method=
+                result.get("method")
+        )
+
+
+    return jsonify(
+
+        success=False,
+
+        error=
+            result.get(
+                "error",
+                "Impossible de convertir ce lien."
+            )
+
+    ), 400
+
+
+# =========================================================
+# Lancement
+# =========================================================
+
+if __name__ == "__main__":
+
+    app.run(
+        host="0.0.0.0",
+        port=5000
+    )
