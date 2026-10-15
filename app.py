@@ -10,6 +10,7 @@ HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Linux; Android 13) "
         "AppleWebKit/537.36 "
+        "(KHTML, like Gecko) "
         "Chrome/124.0 Mobile Safari/537.36"
     )
 }
@@ -35,11 +36,10 @@ def facebook_url(url):
 
 def is_login_url(url):
     try:
-        path = urlparse(url).path.lower()
+        path = urlparse(url).path.lower().rstrip("/")
 
         return (
             path == "/login"
-            or path.startswith("/login/")
             or path == "/login.php"
         )
     except Exception:
@@ -48,16 +48,15 @@ def is_login_url(url):
 
 def extract_next(url):
     try:
-        parsed = urlparse(url)
-        params = parse_qs(parsed.query)
+        qs = parse_qs(urlparse(url).query)
 
-        if "next" not in params:
+        if not qs.get("next"):
             return None
 
-        next_url = unquote(params["next"][0])
+        destination = unquote(qs["next"][0])
 
-        if facebook_url(next_url):
-            return next_url
+        if facebook_url(destination):
+            return destination
 
     except Exception:
         pass
@@ -72,7 +71,10 @@ def clean_facebook_url(url):
 
         path = p.path.rstrip("/") or "/"
 
-        # Profil avec ID numérique
+        # ---------------------------------
+        # profile.php?id=...
+        # ---------------------------------
+
         if path.lower() == "/profile.php" and qs.get("id"):
 
             fb_id = qs["id"][0]
@@ -83,10 +85,18 @@ def clean_facebook_url(url):
                     "profile.php?id=" + fb_id
                 )
 
-        # Paramètres utiles uniquement
+        # ---------------------------------
+        # Nettoyage des paramètres inutiles
+        # ---------------------------------
+
         keep = {}
 
-        for key in ("id", "story_fbid", "fbid", "v"):
+        for key in (
+            "id",
+            "story_fbid",
+            "fbid",
+            "v"
+        ):
             if key in qs and qs[key]:
                 keep[key] = qs[key][0]
 
@@ -102,6 +112,7 @@ def clean_facebook_url(url):
 
 
 def find_numeric_id(text):
+
     if not text:
         return None
 
@@ -111,11 +122,11 @@ def find_numeric_id(text):
         r'"userID"\s*:\s*"(\d{8,25})"',
         r'"user_id"\s*:\s*"(\d{8,25})"',
         r'"profile_id"\s*:\s*"(\d{8,25})"',
-        r'"actorID"\s*:\s*"(\d{8,25})"',
         r'profile\.php\?id=(\d{8,25})'
     ]
 
     for pattern in patterns:
+
         match = re.search(
             pattern,
             text,
@@ -129,10 +140,12 @@ def find_numeric_id(text):
 
 
 def try_people_numeric(url):
-    try:
-        path = urlparse(url).path.lower()
 
-        if not path.startswith("/people/"):
+    try:
+
+        p = urlparse(url)
+
+        if not p.path.lower().startswith("/people/"):
             return None
 
         response = requests.get(
@@ -144,20 +157,24 @@ def try_people_numeric(url):
 
         final_url = response.url
 
-        p = urlparse(final_url)
-        qs = parse_qs(p.query)
+        # Facebook a éventuellement redirigé
+        # vers profile.php?id=...
 
-        # Facebook redirige directement vers profile.php?id=
+        fp = urlparse(final_url)
+        fqs = parse_qs(fp.query)
+
         if (
-            p.path.rstrip("/").lower() == "/profile.php"
-            and qs.get("id")
+            fp.path.rstrip("/").lower() == "/profile.php"
+            and fqs.get("id")
         ):
-            fb_id = qs["id"][0]
+
+            fb_id = fqs["id"][0]
 
             if fb_id.isdigit():
                 return fb_id
 
-        # Recherche dans la page
+        # Sinon recherche dans la page
+
         return find_numeric_id(response.text)
 
     except requests.RequestException:
@@ -166,7 +183,11 @@ def try_people_numeric(url):
 
 @app.get("/")
 def index():
-    return send_from_directory(".", "index.html")
+
+    return send_from_directory(
+        ".",
+        "index.html"
+    )
 
 
 @app.post("/api/resolve")
@@ -177,6 +198,7 @@ def resolve():
     original_url = data.get("url", "").strip()
 
     if not facebook_url(original_url):
+
         return jsonify(
             error="Colle un lien Facebook valide."
         ), 400
@@ -184,6 +206,16 @@ def resolve():
     try:
 
         current = original_url
+
+        login_seen = False
+
+        possible_destination = None
+
+
+        # =====================================
+        # ÉTAPE 1
+        # Résolution classique comme avant
+        # =====================================
 
         for _ in range(12):
 
@@ -205,99 +237,228 @@ def resolve():
             if not location:
                 break
 
-            next_url = urljoin(current, location)
+            next_url = urljoin(
+                current,
+                location
+            )
 
             if not facebook_url(next_url):
-                return jsonify(
-                    error="La redirection quitte Facebook."
-                ), 400
+                break
 
-            # Facebook demande une connexion
+
+            # =================================
+            # LOGIN rencontré
+            # =================================
+
             if is_login_url(next_url):
+
+                login_seen = True
 
                 destination = extract_next(next_url)
 
-                # Si "next" contient déjà une vraie destination
-                if (
-                    destination
-                    and destination != original_url
-                    and "/share/" not in
-                    urlparse(destination).path.lower()
-                ):
-                    current = destination
-                    break
+                # On mémorise NEXT mais on ne
+                # déclenche PAS encore le bouton orange.
 
-                # Cas LOGIN :
-                # on renvoie le lien original au navigateur
-                return jsonify(
-                    status="login_required",
-                    message=(
-                        "Facebook demande une connexion "
-                        "pour terminer la conversion."
-                    ),
-                    browser_url=original_url
-                ), 200
+                if destination:
+
+                    possible_destination = destination
+
+                    # Si NEXT contient déjà une vraie
+                    # destination autre que /share/
+                    # on peut continuer avec elle.
+
+                    destination_path = (
+                        urlparse(destination)
+                        .path
+                        .lower()
+                    )
+
+                    if (
+                        "/share/" not in destination_path
+                        and not is_login_url(destination)
+                    ):
+
+                        current = destination
+                        continue
+
+                # On arrête cette chaîne de redirection,
+                # mais on essaiera encore d'autres méthodes.
+                break
+
 
             current = next_url
 
 
-        # Sécurité supplémentaire
-        if is_login_url(current):
+        # =====================================
+        # ÉTAPE 2
+        # Vérifier si on a déjà un vrai profil
+        # =====================================
 
-            return jsonify(
-                status="login_required",
-                message=(
-                    "Facebook demande une connexion "
-                    "pour terminer la conversion."
-                ),
-                browser_url=original_url
-            ), 200
-
-
-        cleaned = clean_facebook_url(current)
-
-
-        # Facebook n'a toujours pas résolu /share/
-        if "/share/" in urlparse(cleaned).path.lower():
-
-            return jsonify(
-                status="login_required",
-                message=(
-                    "Facebook doit ouvrir ce lien "
-                    "dans ton navigateur pour continuer."
-                ),
-                browser_url=original_url
-            ), 200
-
-
-        # Tentative de conversion /people/ vers ID numérique
         if (
-            urlparse(cleaned)
-            .path
-            .lower()
-            .startswith("/people/")
+            not is_login_url(current)
+            and "/share/" not in
+            urlparse(current).path.lower()
         ):
 
-            fb_id = try_people_numeric(cleaned)
+            cleaned = clean_facebook_url(current)
 
-            if fb_id:
-                cleaned = (
-                    "https://www.facebook.com/"
-                    "profile.php?id=" + fb_id
+
+            # /people/.../pfbid...
+            # tentative ID numérique
+
+            if (
+                urlparse(cleaned)
+                .path
+                .lower()
+                .startswith("/people/")
+            ):
+
+                fb_id = try_people_numeric(cleaned)
+
+                if fb_id:
+
+                    cleaned = (
+                        "https://www.facebook.com/"
+                        "profile.php?id=" + fb_id
+                    )
+
+
+            return jsonify(
+                status="success",
+                final_url=cleaned
+            )
+
+
+        # =====================================
+        # ÉTAPE 3
+        # Essayer la destination NEXT
+        # =====================================
+
+        if possible_destination:
+
+            destination_path = (
+                urlparse(possible_destination)
+                .path
+                .lower()
+            )
+
+            if (
+                "/share/" not in destination_path
+                and not is_login_url(possible_destination)
+            ):
+
+                cleaned = clean_facebook_url(
+                    possible_destination
+                )
+
+                return jsonify(
+                    status="success",
+                    final_url=cleaned
                 )
 
 
+        # =====================================
+        # ÉTAPE 4
+        # Dernière tentative :
+        # laisser requests suivre lui-même
+        # toutes les redirections
+        # =====================================
+
+        try:
+
+            final_response = requests.get(
+                original_url,
+                timeout=12,
+                allow_redirects=True,
+                headers=HEADERS
+            )
+
+            final_url = final_response.url
+
+            final_path = (
+                urlparse(final_url)
+                .path
+                .lower()
+            )
+
+
+            if (
+                facebook_url(final_url)
+                and not is_login_url(final_url)
+                and "/share/" not in final_path
+            ):
+
+                cleaned = clean_facebook_url(
+                    final_url
+                )
+
+
+                if (
+                    urlparse(cleaned)
+                    .path
+                    .lower()
+                    .startswith("/people/")
+                ):
+
+                    fb_id = try_people_numeric(
+                        cleaned
+                    )
+
+                    if fb_id:
+
+                        cleaned = (
+                            "https://www.facebook.com/"
+                            "profile.php?id="
+                            + fb_id
+                        )
+
+
+                return jsonify(
+                    status="success",
+                    final_url=cleaned
+                )
+
+
+        except requests.RequestException:
+            pass
+
+
+        # =====================================
+        # ÉTAPE 5
+        # Aucune méthode n'a fonctionné.
+        #
+        # SEULEMENT MAINTENANT :
+        # bouton orange
+        # =====================================
+
         return jsonify(
-            status="success",
-            final_url=cleaned
-        )
+
+            status="login_required",
+
+            message=(
+                "Facebook demande d'ouvrir "
+                "ce lien dans ton navigateur."
+            ),
+
+            browser_url=original_url
+
+        ), 200
 
 
     except requests.RequestException:
 
+        # Même en cas de blocage réseau Facebook,
+        # on permet l'ouverture manuelle.
+
         return jsonify(
-            error=(
-                "Facebook n'a pas permis "
-                "de résoudre ce lien."
-            )
-        ), 502
+
+            status="login_required",
+
+            message=(
+                "Facebook n'a pas permis la "
+                "conversion automatique."
+            ),
+
+            browser_url=original_url
+
+        ), 200
