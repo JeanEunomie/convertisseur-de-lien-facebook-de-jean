@@ -2,245 +2,361 @@
 <html lang="fr">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Convertisseur Facebook</title>
+<meta charset="UTF-8">
 
-    <style>
-        * {
-            box-sizing: border-box;
-        }
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
 
-        body {
-            margin: 0;
-            padding: 20px;
-            min-height: 100vh;
+<title>Convertisseur Facebook</title>
 
-            display: flex;
-            justify-content: center;
-            align-items: center;
+<style>
 
-            font-family: Arial, sans-serif;
+* {
+    box-sizing: border-box;
+}
 
-            background: #0f172a;
-            color: white;
-        }
+body {
+    margin: 0;
+    padding: 20px;
+    min-height: 100vh;
 
-        .container {
-            width: 100%;
-            max-width: 650px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 
-            background: #1e293b;
+    font-family: Arial, sans-serif;
 
-            padding: 25px;
+    background: #0f172a;
+    color: white;
+}
 
-            border-radius: 20px;
+.container {
+    width: 100%;
+    max-width: 650px;
 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
+    background: #1e293b;
 
-        h1 {
-            margin-top: 0;
-            text-align: center;
-        }
+    padding: 25px;
 
-        .description {
-            text-align: center;
-            color: #cbd5e1;
-            margin-bottom: 25px;
-        }
+    border-radius: 20px;
 
-        input {
-            width: 100%;
+    box-shadow:
+        0 10px 30px rgba(0,0,0,0.3);
+}
 
-            padding: 16px;
+h1 {
+    margin-top: 0;
+    text-align: center;
+}
 
-            border-radius: 12px;
-            border: 1px solid #475569;
+.description {
+    text-align: center;
 
-            background: #0f172a;
-            color: white;
+    color: #cbd5e1;
 
-            font-size: 16px;
+    margin-bottom: 25px;
+}
 
-            outline: none;
-        }
+input {
+    width: 100%;
 
-        input:focus {
-            border-color: #1877f2;
-        }
+    padding: 16px;
 
-        button {
-            width: 100%;
+    border-radius: 12px;
 
-            margin-top: 12px;
+    border: 1px solid #475569;
 
-            padding: 15px;
+    background: #0f172a;
 
-            border: none;
-            border-radius: 12px;
+    color: white;
 
-            background: #1877f2;
-            color: white;
+    font-size: 16px;
 
-            font-size: 16px;
-            font-weight: bold;
+    outline: none;
+}
 
-            cursor: pointer;
-        }
+input:focus {
+    border-color: #1877f2;
+}
 
-        button:active {
-            transform: scale(0.98);
-        }
+button {
+    width: 100%;
 
-        #result {
-            display: none;
+    margin-top: 12px;
 
-            margin-top: 20px;
+    padding: 15px;
 
-            padding: 15px;
+    border: none;
 
-            background: #0f172a;
+    border-radius: 12px;
 
-            border-radius: 12px;
+    background: #1877f2;
 
-            word-break: break-all;
-        }
+    color: white;
 
-        .result-title {
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
+    font-size: 16px;
 
-        .link {
-            color: #60a5fa;
-            font-size: 15px;
-        }
+    font-weight: bold;
 
-        .copy {
-            background: #16a34a;
-        }
+    cursor: pointer;
+}
 
-        .open {
-            background: #475569;
-        }
+button:active {
+    transform: scale(0.98);
+}
 
-        .error {
-            color: #f87171;
-        }
+#result {
+    display: none;
 
-        .loading {
-            text-align: center;
-            color: #cbd5e1;
-        }
+    margin-top: 20px;
 
-        .footer {
-            margin-top: 20px;
+    padding: 15px;
 
-            text-align: center;
+    background: #0f172a;
 
-            color: #94a3b8;
+    border-radius: 12px;
 
-            font-size: 12px;
-        }
-    </style>
+    word-break: break-all;
+}
+
+.result-title {
+    font-weight: bold;
+
+    margin-bottom: 10px;
+}
+
+.link {
+    color: #60a5fa;
+
+    font-size: 15px;
+}
+
+.copy {
+    background: #16a34a;
+}
+
+.open {
+    background: #475569;
+}
+
+
+/* BOUTON SPÉCIAL LOGIN */
+
+.browser {
+    display: none;
+
+    background: #f59e0b;
+
+    color: #111827;
+
+    margin-top: 15px;
+}
+
+
+.warning {
+    color: #fbbf24;
+
+    line-height: 1.5;
+}
+
+.error {
+    color: #f87171;
+}
+
+.loading {
+    text-align: center;
+
+    color: #cbd5e1;
+}
+
+.footer {
+    margin-top: 20px;
+
+    text-align: center;
+
+    color: #94a3b8;
+
+    font-size: 12px;
+}
+
+</style>
 
 </head>
 
+
 <body>
+
 
 <div class="container">
 
-    <h1>
-        Convertisseur Facebook
-    </h1>
 
-    <div class="description">
-        Colle un lien Facebook de partage pour récupérer son lien permanent.
+<h1>
+    Convertisseur Facebook
+</h1>
+
+
+<div class="description">
+
+    Colle un lien Facebook de partage
+    pour récupérer son lien permanent.
+
+</div>
+
+
+<input
+    id="url"
+    type="url"
+    placeholder="https://www.facebook.com/share/..."
+>
+
+
+<button onclick="convertir()">
+
+    Convertir
+
+</button>
+
+
+
+<div id="result">
+
+
+    <div
+        id="resultTitle"
+        class="result-title">
     </div>
 
-    <input
-        id="url"
-        type="url"
-        placeholder="https://www.facebook.com/share/..."
-    >
 
-    <button onclick="convertir()">
-        Convertir
+    <div
+        id="finalLink"
+        class="link">
+    </div>
+
+
+    <button
+        id="copyButton"
+        class="copy"
+        onclick="copier()">
+
+        Copier le lien
+
     </button>
 
 
-    <div id="result">
+    <button
+        id="openButton"
+        class="open"
+        onclick="ouvrirProfil()">
 
-        <div
-            id="resultTitle"
-            class="result-title">
-        </div>
+        Ouvrir le profil
 
-        <div
-            id="finalLink"
-            class="link">
-        </div>
-
-        <button
-            id="copyButton"
-            class="copy"
-            onclick="copier()">
-
-            Copier le lien
-
-        </button>
-
-        <button
-            id="openButton"
-            class="open"
-            onclick="ouvrir()">
-
-            Ouvrir le profil
-
-        </button>
-
-    </div>
+    </button>
 
 
-    <div class="footer">
-        Aucun identifiant ou mot de passe Facebook n'est demandé.
-    </div>
+    <!--
+        Ce bouton apparaît UNIQUEMENT
+        si Facebook demande LOGIN
+    -->
+
+    <button
+        id="browserButton"
+        class="browser"
+        onclick="ouvrirNavigateur()">
+
+        Ouvrir dans un nouvel onglet
+
+    </button>
+
+
+</div>
+
+
+<div class="footer">
+
+    Aucun identifiant ou mot de passe
+    Facebook n'est demandé.
+
+</div>
+
 
 </div>
 
 
 <script>
 
+
 let finalURL = "";
+
+let browserURL = "";
+
 
 
 async function convertir() {
 
+
     const input =
         document.getElementById("url");
+
 
     const result =
         document.getElementById("result");
 
+
     const title =
         document.getElementById("resultTitle");
 
+
     const link =
         document.getElementById("finalLink");
+
+
+    const copyButton =
+        document.getElementById("copyButton");
+
+
+    const openButton =
+        document.getElementById("openButton");
+
+
+    const browserButton =
+        document.getElementById("browserButton");
+
 
 
     const url =
         input.value.trim();
 
 
+
+    /* RESET */
+
+    finalURL = "";
+
+    browserURL = "";
+
+
+    copyButton.style.display = "none";
+
+    openButton.style.display = "none";
+
+    browserButton.style.display = "none";
+
+
+
     if (!url) {
 
-        result.style.display = "block";
+        result.style.display =
+            "block";
+
 
         title.innerHTML =
-            '<span class="error">Colle un lien Facebook.</span>';
+            '<span class="error">' +
+            'Colle un lien Facebook.' +
+            '</span>';
+
 
         link.innerText = "";
 
@@ -248,47 +364,120 @@ async function convertir() {
     }
 
 
-    result.style.display = "block";
+
+    result.style.display =
+        "block";
+
 
     title.innerHTML =
-        '<div class="loading">Conversion en cours...</div>';
+        '<div class="loading">' +
+        'Conversion en cours...' +
+        '</div>';
+
 
     link.innerText = "";
 
 
+
     try {
+
 
         const response =
             await fetch(
+
                 "/api/resolve",
+
                 {
+
                     method: "POST",
 
                     headers: {
+
                         "Content-Type":
                             "application/json"
+
                     },
 
                     body:
                         JSON.stringify({
+
                             url: url
+
                         })
+
                 }
+
             );
+
 
 
         const data =
             await response.json();
 
 
+
         if (!response.ok) {
 
             throw new Error(
+
                 data.error ||
+
                 "Impossible de convertir ce lien."
+
             );
 
         }
+
+
+
+        /*
+        ============================
+        CAS FACEBOOK LOGIN
+        ============================
+        */
+
+
+        if (
+            data.status ===
+            "login_required"
+        ) {
+
+
+            browserURL =
+                data.browser_url;
+
+
+            title.innerHTML =
+
+                '<span class="warning">' +
+
+                'Facebook demande une connexion ' +
+                'pour résoudre ce lien.' +
+
+                '</span>';
+
+
+            link.innerText =
+
+                "Ouvre le lien directement " +
+                "dans ton navigateur.";
+
+
+            browserButton.style.display =
+                "block";
+
+
+            return;
+
+        }
+
+
+
+        /*
+        ============================
+        CONVERSION RÉUSSIE
+        ============================
+        */
 
 
         finalURL =
@@ -303,16 +492,33 @@ async function convertir() {
             finalURL;
 
 
+        copyButton.style.display =
+            "block";
+
+
+        openButton.style.display =
+            "block";
+
+
     }
+
 
     catch (error) {
 
+
         finalURL = "";
 
+        browserURL = "";
+
+
         title.innerHTML =
+
             '<span class="error">' +
+
             error.message +
+
             '</span>';
+
 
         link.innerText = "";
 
@@ -324,11 +530,13 @@ async function convertir() {
 
 async function copier() {
 
+
     if (!finalURL)
         return;
 
 
     try {
+
 
         await navigator.clipboard.writeText(
             finalURL
@@ -350,6 +558,7 @@ async function copier() {
 
 
         setTimeout(
+
             function () {
 
                 button.innerText =
@@ -358,6 +567,7 @@ async function copier() {
             },
 
             1500
+
         );
 
 
@@ -365,9 +575,11 @@ async function copier() {
 
     catch {
 
+
         alert(
-            "Impossible de copier automatiquement le lien."
+            "Impossible de copier automatiquement."
         );
+
 
     }
 
@@ -375,15 +587,42 @@ async function copier() {
 
 
 
-function ouvrir() {
+function ouvrirProfil() {
+
 
     if (!finalURL)
         return;
 
 
     window.open(
+
         finalURL,
-        "_blank"
+
+        "_blank",
+
+        "noopener,noreferrer"
+
+    );
+
+}
+
+
+
+function ouvrirNavigateur() {
+
+
+    if (!browserURL)
+        return;
+
+
+    window.open(
+
+        browserURL,
+
+        "_blank",
+
+        "noopener,noreferrer"
+
     );
 
 }
@@ -393,8 +632,11 @@ function ouvrir() {
 document
     .getElementById("url")
     .addEventListener(
+
         "keydown",
+
         function(event) {
+
 
             if (
                 event.key === "Enter"
@@ -405,7 +647,9 @@ document
             }
 
         }
+
     );
+
 
 </script>
 
