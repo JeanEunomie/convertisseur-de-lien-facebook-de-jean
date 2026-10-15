@@ -1,404 +1,660 @@
-from flask import Flask, request, jsonify, send_from_directory
-import requests
-import re
-import html
-from urllib.parse import urlparse, parse_qs, urlencode, unquote
+<!doctype html>
+<html lang="fr">
 
-app = Flask(__name__)
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 
-HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Linux; Android 13) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/120.0 Mobile Safari/537.36"
-    ),
-    "Accept-Language": "fr-FR,fr;q=0.9,en;q=0.8",
+<title>Convertisseur Facebook</title>
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: #0b1529;
+    color: white;
+    font-family: system-ui, sans-serif;
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+}
+
+main {
+    width: min(600px, 100%);
+    background: #1d2a40;
+    padding: 26px;
+    border-radius: 22px;
+}
+
+h1 {
+    margin: 0 0 8px;
+    font-size: 2rem;
+}
+
+.intro {
+    margin: 0 0 20px;
+    color: #bdc7d8;
+}
+
+input {
+    width: 100%;
+    padding: 16px;
+    border-radius: 13px;
+    border: 1px solid #526078;
+    background: #0d172b;
+    color: white;
+    font-size: 16px;
+}
+
+button {
+    width: 100%;
+    padding: 15px;
+    margin-top: 12px;
+    border: 0;
+    border-radius: 13px;
+    background: #1877f2;
+    color: white;
+    font-size: 16px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+button:disabled {
+    opacity: .6;
+}
+
+.secondary {
+    background: transparent;
+    border: 1px solid #526078;
+    color: #bdc7d8;
+}
+
+.box {
+    margin-top: 20px;
+    padding: 20px;
+    border-radius: 15px;
+    background: #0d172b;
+}
+
+.success {
+    border: 1px solid #3b8f65;
+}
+
+.warning {
+    border: 1px solid #a77a35;
+}
+
+#result,
+#fallback {
+    display: none;
+}
+
+.status {
+    font-size: 19px;
+    font-weight: 800;
+    margin-bottom: 14px;
+}
+
+.final-url {
+    background: #162239;
+    padding: 14px;
+    border-radius: 10px;
+    word-break: break-all;
+    line-height: 1.5;
+}
+
+.instructions {
+    color: #bdc7d8;
+    line-height: 1.55;
+    margin: 0 0 15px;
+}
+
+.step {
+    margin-top: 20px;
+    font-weight: 800;
+}
+
+.help {
+    display: none;
+    margin-top: 14px;
+    padding: 15px;
+    background: #162239;
+    border-radius: 12px;
+    color: #bdc7d8;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.help strong {
+    color: white;
+}
+
+.privacy {
+    text-align: center;
+    color: #8492a8;
+    font-size: 12px;
+    margin-top: 20px;
+}
+
+</style>
+</head>
+
+<body>
+
+<main>
+
+    <h1>Convertisseur Facebook</h1>
+
+    <p class="intro">
+        Colle ton lien Facebook.
+    </p>
+
+
+    <!-- ÉCRAN DE DÉPART -->
+
+    <div id="mainForm">
+
+        <input
+            id="u"
+            type="url"
+            placeholder="https://www.facebook.com/share/..."
+        >
+
+        <button
+            id="convertButton"
+            onclick="go()">
+            Convertir
+        </button>
+
+    </div>
+
+
+    <!-- CONVERSION RÉUSSIE -->
+
+    <div
+        id="result"
+        class="box success">
+
+        <div class="status">
+            ✅ Lien trouvé
+        </div>
+
+        <div
+            id="finalUrl"
+            class="final-url">
+        </div>
+
+        <button
+            id="copyButton"
+            onclick="copyResult()">
+            📋 Copier le lien
+        </button>
+
+        <button
+            class="secondary"
+            onclick="resetConverter()">
+            ↻ Nouvelle conversion
+        </button>
+
+    </div>
+
+
+    <!-- MODE DE SECOURS -->
+
+    <div
+        id="fallback"
+        class="box warning">
+
+        <div class="status">
+            Facebook doit ouvrir le lien une fois
+        </div>
+
+        <p class="instructions">
+            Ouvre le profil Facebook avec le bouton ci-dessous.
+        </p>
+
+        <input
+            type="hidden"
+            id="openfb_url"
+        >
+
+        <button onclick="ouvrirFacebook()">
+            🌐 Ouvrir le profil
+        </button>
+
+
+        <button
+            class="secondary"
+            onclick="toggleHelp()">
+            📱 Facebook s'ouvre dans l'application ?
+        </button>
+
+
+        <div
+            id="help"
+            class="help">
+
+            <strong>Android</strong><br>
+            Paramètres → Applications → Facebook →
+            Ouvrir par défaut, puis désactive
+            <b>Ouvrir les liens compatibles</b>.
+
+            <br><br>
+
+            Si tu as plusieurs applications Facebook,
+            fais-le pour chacune.
+
+            <br><br>
+
+            <strong>iPhone / iPad</strong><br>
+            Ouvre le lien dans Safari.
+            Si nécessaire, fais un appui prolongé
+            sur le lien et choisis
+            <b>Ouvrir dans un nouvel onglet</b>.
+
+        </div>
+
+
+        <div class="step">
+            Ensuite, colle ici le lien obtenu :
+        </div>
+
+        <p class="instructions">
+            Reviens sur cette page après avoir récupéré
+            le lien du profil.
+        </p>
+
+        <input
+            id="manual"
+            type="url"
+            placeholder="https://www.facebook.com/..."
+        >
+
+        <button
+            id="finishButton"
+            onclick="cleanManual()">
+            Terminer
+        </button>
+
+        <button
+            class="secondary"
+            onclick="resetConverter()">
+            ↻ Recommencer
+        </button>
+
+    </div>
+
+
+    <p class="privacy">
+        🔒 Aucun mot de passe ni cookie Facebook n'est demandé.
+    </p>
+
+</main>
+
+
+<script>
+
+const mainForm =
+    document.getElementById("mainForm");
+
+const result =
+    document.getElementById("result");
+
+const fallback =
+    document.getElementById("fallback");
+
+let currentFinalUrl = "";
+
+
+/* CONVERSION */
+
+async function go() {
+
+    const url =
+        document.getElementById("u")
+        .value
+        .trim();
+
+    if (!url) {
+        alert("Colle d'abord un lien Facebook.");
+        return;
+    }
+
+    const button =
+        document.getElementById("convertButton");
+
+    button.disabled = true;
+    button.textContent = "Recherche…";
+
+    try {
+
+        const response =
+            await fetch("/api/resolve", {
+
+                method: "POST",
+
+                headers: {
+                    "Content-Type":
+                        "application/json"
+                },
+
+                body: JSON.stringify({
+                    url: url
+                })
+            });
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.error ||
+                "Une erreur est survenue."
+            );
+        }
+
+
+        if (data.success) {
+
+            showSuccess(
+                data.final_url
+            );
+
+        } else {
+
+            showFallback(
+                data.original_url || url
+            );
+        }
+
+    } catch (e) {
+
+        alert(e.message);
+
+    } finally {
+
+        button.disabled = false;
+        button.textContent = "Convertir";
+    }
 }
 
 
-# =========================================================
-# Vérifier qu'il s'agit bien d'un lien Facebook
-# =========================================================
+/* SUCCÈS */
 
-def is_facebook(url):
+function showSuccess(url) {
 
-    try:
+    currentFinalUrl = url;
 
-        p = urlparse(url)
+    mainForm.style.display = "none";
+    fallback.style.display = "none";
 
-        host = (p.hostname or "").lower()
+    document.getElementById(
+        "finalUrl"
+    ).textContent = url;
 
-        return (
-            p.scheme in ("http", "https")
-            and (
-                host == "facebook.com"
-                or host.endswith(".facebook.com")
-                or host == "fb.com"
-                or host.endswith(".fb.com")
-            )
-        )
+    result.style.display = "block";
+}
 
-    except Exception:
 
-        return False
+/* COPIE */
 
+async function copyResult() {
 
-# =========================================================
-# Nettoyer une URL Facebook
-# =========================================================
+    try {
 
-def clean_facebook_url(url):
+        await navigator.clipboard.writeText(
+            currentFinalUrl
+        );
 
-    p = urlparse(url)
+        const button =
+            document.getElementById(
+                "copyButton"
+            );
 
-    qs = parse_qs(p.query)
+        button.textContent =
+            "✅ Copié !";
 
-    path = unquote(
-        p.path.rstrip("/") or "/"
-    )
+        setTimeout(() => {
 
+            button.textContent =
+                "📋 Copier le lien";
 
-    # -----------------------------------------
-    # CAS :
-    # profile.php?id=123456
-    # -----------------------------------------
+        }, 1500);
 
-    if path.lower() == "/profile.php":
+    } catch {
 
-        ids = qs.get("id")
+        alert(
+            "Impossible de copier automatiquement."
+        );
+    }
+}
 
-        if ids and ids[0].isdigit():
 
-            return (
-                "https://www.facebook.com/"
-                "profile.php?id="
-                + ids[0]
-            )
+/* MODE DE SECOURS */
 
+function showFallback(original) {
 
-    # -----------------------------------------
-    # Autres profils
-    # -----------------------------------------
+    mainForm.style.display = "none";
+    result.style.display = "none";
 
-    keep = {}
+    document.getElementById(
+        "openfb_url"
+    ).value = original;
 
-    for key in (
-        "id",
-        "story_fbid",
-        "fbid",
-        "v"
-    ):
+    fallback.style.display = "block";
+}
 
-        if qs.get(key):
 
-            keep[key] = qs[key][0]
+/* OUVRIR FACEBOOK */
 
+function ouvrirFacebook() {
 
-    result = (
-        "https://www.facebook.com"
-        + path
-    )
+    let url =
+        document.getElementById(
+            "openfb_url"
+        ).value;
 
+    if (!url) {
+        return;
+    }
 
-    if keep:
+    try {
 
-        result += (
-            "?"
-            + urlencode(keep)
-        )
+        const fbUrl =
+            new URL(url);
 
+        fbUrl.protocol = "https:";
 
-    return result
+        /*
+        Version Web mobile.
+        Cela réduit certains passages
+        automatiques vers l'application,
+        sans pouvoir les empêcher à 100 %.
+        */
 
+        fbUrl.hostname =
+            "m.facebook.com";
 
-# =========================================================
-# Chercher un ID numérique Facebook dans la page
-# =========================================================
+        window.open(
+            fbUrl.toString(),
+            "_blank",
+            "noopener,noreferrer"
+        );
 
-def extract_numeric_id(text):
+    } catch {
 
-    if not text:
+        alert(
+            "Le lien Facebook n'est pas valide."
+        );
+    }
+}
 
-        return None
 
+/* AIDE */
 
-    text = html.unescape(text)
+function toggleHelp() {
 
+    const help =
+        document.getElementById("help");
 
-    patterns = [
+    help.style.display =
+        help.style.display === "block"
+        ? "none"
+        : "block";
+}
 
-        r'"userID"\s*:\s*"(\d{8,25})"',
 
-        r'"user_id"\s*:\s*"(\d{8,25})"',
+/* LIEN RÉCUPÉRÉ */
 
-        r'"profile_id"\s*:\s*"(\d{8,25})"',
+async function cleanManual() {
 
-        r'profile\.php\?id=(\d{8,25})',
+    const url =
+        document.getElementById(
+            "manual"
+        ).value.trim();
 
-    ]
+    if (!url) {
 
+        alert(
+            "Colle le lien récupéré sur Facebook."
+        );
 
-    for pattern in patterns:
-
-        match = re.search(
-            pattern,
-            text,
-            re.I
-        )
-
-
-        if match:
-
-            return match.group(1)
-
-
-    return None
-
-
-# =========================================================
-# Chercher un lien /people/.../pfbid...
-# =========================================================
-
-def extract_people_url(text):
-
-    if not text:
-
-        return None
-
-
-    text = html.unescape(text)
-
-    text = text.replace(
-        "\\/",
-        "/"
-    )
-
-    text = text.replace(
-        "\\u0026",
-        "&"
-    )
-
-
-    match = re.search(
-
-        r'https?://(?:www\.)?facebook\.com'
-        r'(/people/[^"\'<>\s]+/pfbid[a-zA-Z0-9]+)',
-
-        text,
-
-        re.I
-    )
-
-
-    if match:
-
-        return clean_facebook_url(
-
-            "https://www.facebook.com"
-            + match.group(1)
-        )
-
-
-    return None
-
-
-# =========================================================
-# Résoudre le lien Facebook
-# =========================================================
-
-def resolve_facebook(original):
-
-    session = requests.Session()
-
-    session.headers.update(
-        HEADERS
-    )
-
-
-    try:
-
-        response = session.get(
-
-            original,
-
-            allow_redirects=True,
-
-            timeout=15
-        )
-
-
-    except requests.RequestException:
-
-        return {
-            "success": False,
-            "error":
-                "Impossible de contacter Facebook."
-        }
-
-
-    # =====================================================
-    # 1 - Chercher un ID numérique dans la page
-    # =====================================================
-
-    numeric_id = extract_numeric_id(
-        response.text
-    )
-
-
-    if numeric_id:
-
-        return {
-
-            "success": True,
-
-            "url":
-                "https://www.facebook.com/"
-                "profile.php?id="
-                + numeric_id,
-
-            "method":
-                "numeric_id"
-        }
-
-
-    # =====================================================
-    # 2 - Chercher un lien /people/
-    # =====================================================
-
-    people_url = extract_people_url(
-        response.text
-    )
-
-
-    if people_url:
-
-        return {
-
-            "success": True,
-
-            "url":
-                people_url,
-
-            "method":
-                "people"
-        }
-
-
-    # =====================================================
-    # 3 - Utiliser simplement la redirection Facebook
-    # =====================================================
-
-    final_url = response.url
-
-
-    if is_facebook(final_url):
-
-        return {
-
-            "success": True,
-
-            "url":
-                clean_facebook_url(
-                    final_url
-                ),
-
-            "method":
-                "redirect"
-        }
-
-
-    return {
-
-        "success": False,
-
-        "error":
-            "Impossible de retrouver le profil Facebook."
+        return;
     }
 
 
-# =========================================================
-# Page principale
-# =========================================================
+    const button =
+        document.getElementById(
+            "finishButton"
+        );
 
-@app.get("/")
-def home():
-
-    return send_from_directory(
-        ".",
-        "index.html"
-    )
+    button.disabled = true;
+    button.textContent =
+        "Analyse…";
 
 
-# =========================================================
-# API
-# =========================================================
+    try {
 
-@app.post("/api/resolve")
-def resolve():
+        const response =
+            await fetch("/api/clean", {
 
-    data = (
-        request.get_json(silent=True)
-        or {}
-    )
+                method: "POST",
 
+                headers: {
+                    "Content-Type":
+                        "application/json"
+                },
 
-    original = (
-        data.get("url", "")
-        .strip()
-    )
-
-
-    if not is_facebook(original):
-
-        return jsonify(
-
-            success=False,
-
-            error=
-                "Colle un lien Facebook valide."
-
-        ), 400
+                body:
+                    JSON.stringify({
+                        url: url
+                    })
+            });
 
 
-    result = resolve_facebook(
-        original
-    )
+        const data =
+            await response.json();
 
 
-    if result.get("success"):
+        if (!response.ok) {
 
-        return jsonify(
-
-            success=True,
-
-            final_url=
-                result["url"],
-
-            method=
-                result.get("method")
-        )
+            throw new Error(
+                data.error ||
+                "Une erreur est survenue."
+            );
+        }
 
 
-    return jsonify(
+        if (data.success) {
 
-        success=False,
+            showSuccess(
+                data.final_url
+            );
 
-        error=
-            result.get(
-                "error",
-                "Impossible de convertir ce lien."
-            )
+        } else {
 
-    ), 400
+            alert(
+                data.message ||
+                "Facebook a encore fourni un lien de partage. Essaie de récupérer directement l'adresse du profil."
+            );
+        }
+
+    } catch (e) {
+
+        alert(e.message);
+
+    } finally {
+
+        button.disabled = false;
+        button.textContent =
+            "Terminer";
+    }
+}
 
 
-# =========================================================
-# Lancement
-# =========================================================
+/* RECOMMENCER */
 
-if __name__ == "__main__":
+function resetConverter() {
 
-    app.run(
-        host="0.0.0.0",
-        port=5000
-    )
+    currentFinalUrl = "";
+
+    document.getElementById(
+        "u"
+    ).value = "";
+
+    document.getElementById(
+        "manual"
+    ).value = "";
+
+    document.getElementById(
+        "help"
+    ).style.display = "none";
+
+    result.style.display = "none";
+    fallback.style.display = "none";
+
+    mainForm.style.display = "block";
+
+    document.getElementById(
+        "u"
+    ).focus();
+}
+
+
+/* TOUCHE ENTRÉE */
+
+document.getElementById("u")
+.addEventListener(
+    "keydown",
+    function(e) {
+
+        if (e.key === "Enter") {
+            go();
+        }
+    }
+);
+
+
+document.getElementById("manual")
+.addEventListener(
+    "keydown",
+    function(e) {
+
+        if (e.key === "Enter") {
+            cleanManual();
+        }
+    }
+);
+
+</script>
+
+</body>
+</html>
