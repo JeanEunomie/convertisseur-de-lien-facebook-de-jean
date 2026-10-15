@@ -43,8 +43,7 @@ body {
 
     border-radius: 20px;
 
-    box-shadow:
-        0 10px 30px rgba(0,0,0,0.3);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
 }
 
 h1 {
@@ -54,9 +53,7 @@ h1 {
 
 .description {
     text-align: center;
-
     color: #cbd5e1;
-
     margin-bottom: 25px;
 }
 
@@ -66,15 +63,12 @@ input {
     padding: 16px;
 
     border-radius: 12px;
-
     border: 1px solid #475569;
 
     background: #0f172a;
-
     color: white;
 
     font-size: 16px;
-
     outline: none;
 }
 
@@ -86,22 +80,34 @@ button {
     width: 100%;
 
     margin-top: 12px;
-
     padding: 15px;
 
     border: none;
-
     border-radius: 12px;
-
-    background: #1877f2;
 
     color: white;
 
     font-size: 16px;
-
     font-weight: bold;
 
     cursor: pointer;
+}
+
+.convert {
+    background: #1877f2;
+}
+
+.copy {
+    background: #16a34a;
+}
+
+.open {
+    background: #475569;
+}
+
+.browser {
+    background: #f59e0b;
+    color: #111827;
 }
 
 button:active {
@@ -112,7 +118,6 @@ button:active {
     display: none;
 
     margin-top: 20px;
-
     padding: 15px;
 
     background: #0f172a;
@@ -124,41 +129,16 @@ button:active {
 
 .result-title {
     font-weight: bold;
-
     margin-bottom: 10px;
 }
 
 .link {
     color: #60a5fa;
-
     font-size: 15px;
 }
 
-.copy {
-    background: #16a34a;
-}
-
-.open {
-    background: #475569;
-}
-
-
-/* BOUTON SPÉCIAL LOGIN */
-
-.browser {
-    display: none;
-
-    background: #f59e0b;
-
-    color: #111827;
-
-    margin-top: 15px;
-}
-
-
 .warning {
     color: #fbbf24;
-
     line-height: 1.5;
 }
 
@@ -168,7 +148,6 @@ button:active {
 
 .loading {
     text-align: center;
-
     color: #cbd5e1;
 }
 
@@ -189,20 +168,14 @@ button:active {
 
 <body>
 
-
 <div class="container">
-
 
 <h1>
     Convertisseur Facebook
 </h1>
 
-
 <div class="description">
-
-    Colle un lien Facebook de partage
-    pour récupérer son lien permanent.
-
+    Colle un lien Facebook de partage pour récupérer son lien permanent.
 </div>
 
 
@@ -213,22 +186,20 @@ button:active {
 >
 
 
-<button onclick="convertir()">
-
+<button
+    class="convert"
+    onclick="convertir()"
+>
     Convertir
-
 </button>
 
 
-
 <div id="result">
-
 
     <div
         id="resultTitle"
         class="result-title">
     </div>
-
 
     <div
         id="finalLink"
@@ -239,130 +210,103 @@ button:active {
     <button
         id="copyButton"
         class="copy"
-        onclick="copier()">
-
+        onclick="copier()"
+        style="display:none;"
+    >
         Copier le lien
-
     </button>
 
 
     <button
         id="openButton"
         class="open"
-        onclick="ouvrirProfil()">
-
+        onclick="ouvrirProfil()"
+        style="display:none;"
+    >
         Ouvrir le profil
-
     </button>
 
-
-    <!--
-        Ce bouton apparaît UNIQUEMENT
-        si Facebook demande LOGIN
-    -->
 
     <button
         id="browserButton"
         class="browser"
-        onclick="ouvrirNavigateur()">
-
+        onclick="ouvrirNavigateur()"
+        style="display:none;"
+    >
         Ouvrir dans un nouvel onglet
-
     </button>
-
 
 </div>
 
 
 <div class="footer">
-
-    Aucun identifiant ou mot de passe
-    Facebook n'est demandé.
-
+    Aucun identifiant ou mot de passe Facebook n'est demandé.
 </div>
-
 
 </div>
 
 
 <script>
 
-
 let finalURL = "";
-
-let browserURL = "";
-
+let originalURL = "";
 
 
 async function convertir() {
 
-
     const input =
         document.getElementById("url");
-
 
     const result =
         document.getElementById("result");
 
-
     const title =
         document.getElementById("resultTitle");
-
 
     const link =
         document.getElementById("finalLink");
 
-
     const copyButton =
         document.getElementById("copyButton");
 
-
     const openButton =
         document.getElementById("openButton");
-
 
     const browserButton =
         document.getElementById("browserButton");
 
 
-
-    const url =
+    originalURL =
         input.value.trim();
 
 
-
-    /* RESET */
-
     finalURL = "";
 
-    browserURL = "";
+
+    copyButton.style.display =
+        "none";
+
+    openButton.style.display =
+        "none";
+
+    browserButton.style.display =
+        "none";
 
 
-    copyButton.style.display = "none";
-
-    openButton.style.display = "none";
-
-    browserButton.style.display = "none";
-
-
-
-    if (!url) {
+    if (!originalURL) {
 
         result.style.display =
             "block";
-
 
         title.innerHTML =
             '<span class="error">' +
             'Colle un lien Facebook.' +
             '</span>';
 
-
         link.innerText = "";
 
         return;
     }
-
 
 
     result.style.display =
@@ -378,90 +322,93 @@ async function convertir() {
     link.innerText = "";
 
 
-
     try {
-
 
         const response =
             await fetch(
-
                 "/api/resolve",
-
                 {
-
                     method: "POST",
 
                     headers: {
-
                         "Content-Type":
                             "application/json"
-
                     },
 
                     body:
                         JSON.stringify({
-
-                            url: url
-
+                            url: originalURL
                         })
-
                 }
-
             );
-
 
 
         const data =
             await response.json();
 
 
-
         if (!response.ok) {
 
             throw new Error(
-
                 data.error ||
-
                 "Impossible de convertir ce lien."
-
             );
 
         }
 
 
+        finalURL =
+            data.final_url;
+
 
         /*
-        ============================
-        CAS FACEBOOK LOGIN
-        ============================
+        =====================================
+        ON REGARDE SI LE RÉSULTAT EST LOGIN
+        =====================================
         */
+
+        let resultURL;
+
+        try {
+
+            resultURL =
+                new URL(finalURL);
+
+        }
+
+        catch {
+
+            resultURL = null;
+
+        }
 
 
         if (
-            data.status ===
-            "login_required"
+            resultURL &&
+            (
+                resultURL.pathname === "/login" ||
+                resultURL.pathname === "/login/" ||
+                resultURL.pathname === "/login.php"
+            )
         ) {
 
-
-            browserURL =
-                data.browser_url;
+            finalURL = "";
 
 
             title.innerHTML =
-
                 '<span class="warning">' +
-
-                'Facebook demande une connexion ' +
-                'pour résoudre ce lien.' +
-
+                'Facebook demande une connexion.' +
                 '</span>';
 
 
             link.innerText =
+                "Ouvre le lien directement dans ton navigateur pour continuer.";
 
-                "Ouvre le lien directement " +
-                "dans ton navigateur.";
 
+            /*
+            UNIQUEMENT ICI
+            LE BOUTON ORANGE APPARAÎT
+            */
 
             browserButton.style.display =
                 "block";
@@ -472,16 +419,11 @@ async function convertir() {
         }
 
 
-
         /*
-        ============================
-        CONVERSION RÉUSSIE
-        ============================
+        =====================================
+        RÉSULTAT NORMAL DE LA V4
+        =====================================
         */
-
-
-        finalURL =
-            data.final_url;
 
 
         title.innerText =
@@ -499,24 +441,17 @@ async function convertir() {
         openButton.style.display =
             "block";
 
-
     }
 
 
     catch (error) {
 
-
         finalURL = "";
-
-        browserURL = "";
 
 
         title.innerHTML =
-
             '<span class="error">' +
-
             error.message +
-
             '</span>';
 
 
@@ -530,13 +465,11 @@ async function convertir() {
 
 async function copier() {
 
-
     if (!finalURL)
         return;
 
 
     try {
-
 
         await navigator.clipboard.writeText(
             finalURL
@@ -549,37 +482,27 @@ async function copier() {
             );
 
 
-        const original =
-            button.innerText;
-
-
         button.innerText =
             "✓ Lien copié !";
 
 
         setTimeout(
-
             function () {
 
                 button.innerText =
-                    original;
+                    "Copier le lien";
 
             },
-
             1500
-
         );
-
 
     }
 
     catch {
 
-
         alert(
             "Impossible de copier automatiquement."
         );
-
 
     }
 
@@ -589,19 +512,14 @@ async function copier() {
 
 function ouvrirProfil() {
 
-
     if (!finalURL)
         return;
 
 
     window.open(
-
         finalURL,
-
         "_blank",
-
         "noopener,noreferrer"
-
     );
 
 }
@@ -610,19 +528,14 @@ function ouvrirProfil() {
 
 function ouvrirNavigateur() {
 
-
-    if (!browserURL)
+    if (!originalURL)
         return;
 
 
     window.open(
-
-        browserURL,
-
+        originalURL,
         "_blank",
-
         "noopener,noreferrer"
-
     );
 
 }
@@ -632,24 +545,17 @@ function ouvrirNavigateur() {
 document
     .getElementById("url")
     .addEventListener(
-
         "keydown",
-
         function(event) {
 
-
-            if (
-                event.key === "Enter"
-            ) {
+            if (event.key === "Enter") {
 
                 convertir();
 
             }
 
         }
-
     );
-
 
 </script>
 
