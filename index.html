@@ -1,19 +1,415 @@
-<!doctype html><html lang="fr"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Convertisseur Facebook</title><style>
-*{box-sizing:border-box}body{margin:0;background:#0f172a;color:#fff;font-family:system-ui;min-height:100vh;display:grid;place-items:center;padding:18px}
-main{width:min(650px,100%);background:#1e293b;border-radius:22px;padding:24px}h1{margin-top:0}
-input{width:100%;padding:16px;border:1px solid #475569;border-radius:13px;background:#0f172a;color:#fff;font-size:16px}
-button{width:100%;margin-top:12px;padding:14px;border:0;border-radius:13px;background:#1877f2;color:#fff;font-weight:800;font-size:16px}
-#r{display:none;margin-top:18px;padding:15px;background:#0f172a;border-radius:13px;word-break:break-all}.muted{color:#94a3b8;font-size:13px}
-</style></head><body><main><h1>Convertisseur Facebook</h1>
-<p>Colle un lien Facebook <b>/share/…</b>.</p><input id="u" placeholder="https://www.facebook.com/share/...">
-<button onclick="go()">Convertir</button><div id="r"></div>
-<p class="muted">Aucun identifiant Facebook n'est demandé. Certains liens nécessitant une connexion Facebook peuvent ne pas être résolus.</p>
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Convertisseur Facebook</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            font-family: Arial, sans-serif;
+
+            background: #0f172a;
+            color: white;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 650px;
+
+            background: #1e293b;
+
+            padding: 25px;
+
+            border-radius: 20px;
+
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            margin-top: 0;
+            text-align: center;
+        }
+
+        .description {
+            text-align: center;
+            color: #cbd5e1;
+            margin-bottom: 25px;
+        }
+
+        input {
+            width: 100%;
+
+            padding: 16px;
+
+            border-radius: 12px;
+            border: 1px solid #475569;
+
+            background: #0f172a;
+            color: white;
+
+            font-size: 16px;
+
+            outline: none;
+        }
+
+        input:focus {
+            border-color: #1877f2;
+        }
+
+        button {
+            width: 100%;
+
+            margin-top: 12px;
+
+            padding: 15px;
+
+            border: none;
+            border-radius: 12px;
+
+            background: #1877f2;
+            color: white;
+
+            font-size: 16px;
+            font-weight: bold;
+
+            cursor: pointer;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        #result {
+            display: none;
+
+            margin-top: 20px;
+
+            padding: 15px;
+
+            background: #0f172a;
+
+            border-radius: 12px;
+
+            word-break: break-all;
+        }
+
+        .result-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .link {
+            color: #60a5fa;
+            font-size: 15px;
+        }
+
+        .copy {
+            background: #16a34a;
+        }
+
+        .open {
+            background: #475569;
+        }
+
+        .error {
+            color: #f87171;
+        }
+
+        .loading {
+            text-align: center;
+            color: #cbd5e1;
+        }
+
+        .footer {
+            margin-top: 20px;
+
+            text-align: center;
+
+            color: #94a3b8;
+
+            font-size: 12px;
+        }
+    </style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>
+        Convertisseur Facebook
+    </h1>
+
+    <div class="description">
+        Colle un lien Facebook de partage pour récupérer son lien permanent.
+    </div>
+
+    <input
+        id="url"
+        type="url"
+        placeholder="https://www.facebook.com/share/..."
+    >
+
+    <button onclick="convertir()">
+        Convertir
+    </button>
+
+
+    <div id="result">
+
+        <div
+            id="resultTitle"
+            class="result-title">
+        </div>
+
+        <div
+            id="finalLink"
+            class="link">
+        </div>
+
+        <button
+            id="copyButton"
+            class="copy"
+            onclick="copier()">
+
+            Copier le lien
+
+        </button>
+
+        <button
+            id="openButton"
+            class="open"
+            onclick="ouvrir()">
+
+            Ouvrir le profil
+
+        </button>
+
+    </div>
+
+
+    <div class="footer">
+        Aucun identifiant ou mot de passe Facebook n'est demandé.
+    </div>
+
+</div>
+
+
 <script>
-const esc=s=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-async function go(){let b=document.getElementById('r');b.style.display='block';b.textContent='Conversion…';
-try{let x=await fetch('/api/resolve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:document.getElementById('u').value})});
-let d=await x.json();if(!x.ok)throw Error(d.error||'Erreur');b.innerHTML='<b>Lien final :</b><br>'+esc(d.final_url)+'<button id="c">Copier</button>';
-document.getElementById('c').onclick=async()=>{await navigator.clipboard.writeText(d.final_url);document.getElementById('c').textContent='Copié !'}}catch(e){b.textContent=e.message}}
-</script></main></body></html>
+
+let finalURL = "";
+
+
+async function convertir() {
+
+    const input =
+        document.getElementById("url");
+
+    const result =
+        document.getElementById("result");
+
+    const title =
+        document.getElementById("resultTitle");
+
+    const link =
+        document.getElementById("finalLink");
+
+
+    const url =
+        input.value.trim();
+
+
+    if (!url) {
+
+        result.style.display = "block";
+
+        title.innerHTML =
+            '<span class="error">Colle un lien Facebook.</span>';
+
+        link.innerText = "";
+
+        return;
+    }
+
+
+    result.style.display = "block";
+
+    title.innerHTML =
+        '<div class="loading">Conversion en cours...</div>';
+
+    link.innerText = "";
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/resolve",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+                            url: url
+                        })
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.error ||
+                "Impossible de convertir ce lien."
+            );
+
+        }
+
+
+        finalURL =
+            data.final_url;
+
+
+        title.innerText =
+            "Lien permanent :";
+
+
+        link.innerText =
+            finalURL;
+
+
+    }
+
+    catch (error) {
+
+        finalURL = "";
+
+        title.innerHTML =
+            '<span class="error">' +
+            error.message +
+            '</span>';
+
+        link.innerText = "";
+
+    }
+
+}
+
+
+
+async function copier() {
+
+    if (!finalURL)
+        return;
+
+
+    try {
+
+        await navigator.clipboard.writeText(
+            finalURL
+        );
+
+
+        const button =
+            document.getElementById(
+                "copyButton"
+            );
+
+
+        const original =
+            button.innerText;
+
+
+        button.innerText =
+            "✓ Lien copié !";
+
+
+        setTimeout(
+            function () {
+
+                button.innerText =
+                    original;
+
+            },
+
+            1500
+        );
+
+
+    }
+
+    catch {
+
+        alert(
+            "Impossible de copier automatiquement le lien."
+        );
+
+    }
+
+}
+
+
+
+function ouvrir() {
+
+    if (!finalURL)
+        return;
+
+
+    window.open(
+        finalURL,
+        "_blank"
+    );
+
+}
+
+
+
+document
+    .getElementById("url")
+    .addEventListener(
+        "keydown",
+        function(event) {
+
+            if (
+                event.key === "Enter"
+            ) {
+
+                convertir();
+
+            }
+
+        }
+    );
+
+</script>
+
+
+</body>
+
+</html>
