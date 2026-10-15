@@ -2,38 +2,28 @@ from flask import Flask, request, jsonify, send_from_directory
 import requests
 import re
 import html
-from urllib.parse import (
-    urlparse,
-    urljoin,
-    parse_qs,
-    urlencode,
-    unquote
-)
+from urllib.parse import urlparse, parse_qs, urlencode, unquote
 
 app = Flask(__name__)
 
-# Plusieurs User-Agent.
-# Facebook peut répondre différemment selon le navigateur présenté.
-USER_AGENTS = [
-    (
+HEADERS = {
+    "User-Agent": (
         "Mozilla/5.0 (Linux; Android 13) "
         "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/120.0.0.0 Mobile Safari/537.36"
+        "Chrome/120.0 Mobile Safari/537.36"
     ),
-    (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/120.0.0.0 Safari/537.36"
-    )
-]
+    "Accept-Language": "fr-FR,fr;q=0.9,en;q=0.8",
+}
 
 
-# ==========================================================
-# VÉRIFICATIONS
-# ==========================================================
+# =========================================================
+# Vérifier qu'il s'agit bien d'un lien Facebook
+# =========================================================
 
 def is_facebook(url):
+
     try:
+
         p = urlparse(url)
 
         host = (p.hostname or "").lower()
@@ -49,48 +39,13 @@ def is_facebook(url):
         )
 
     except Exception:
+
         return False
 
 
-def get_path(url):
-    try:
-        return unquote(
-            urlparse(url).path or "/"
-        )
-    except Exception:
-        return "/"
-
-
-def is_login(url):
-    return get_path(url).lower().startswith(
-        "/login"
-    )
-
-
-def is_share(url):
-    path = get_path(url).lower()
-
-    return (
-        path.startswith("/share/")
-        or path.startswith("/share.php")
-        or path.startswith("/sharer/")
-        or path.startswith("/sharer.php")
-    )
-
-
-def is_home(url):
-    try:
-        path = get_path(url).rstrip("/")
-
-        return path == ""
-
-    except Exception:
-        return False
-
-
-# ==========================================================
-# NETTOYAGE
-# ==========================================================
+# =========================================================
+# Nettoyer une URL Facebook
+# =========================================================
 
 def clean_facebook_url(url):
 
@@ -103,18 +58,16 @@ def clean_facebook_url(url):
     )
 
 
-    # ------------------------------------------
+    # -----------------------------------------
+    # CAS :
     # profile.php?id=123456
-    # ------------------------------------------
+    # -----------------------------------------
 
     if path.lower() == "/profile.php":
 
         ids = qs.get("id")
 
-        if (
-            ids
-            and ids[0].isdigit()
-        ):
+        if ids and ids[0].isdigit():
 
             return (
                 "https://www.facebook.com/"
@@ -123,9 +76,9 @@ def clean_facebook_url(url):
             )
 
 
-    # ------------------------------------------
-    # Autres liens Facebook
-    # ------------------------------------------
+    # -----------------------------------------
+    # Autres profils
+    # -----------------------------------------
 
     keep = {}
 
@@ -137,6 +90,7 @@ def clean_facebook_url(url):
     ):
 
         if qs.get(key):
+
             keep[key] = qs[key][0]
 
 
@@ -145,6 +99,7 @@ def clean_facebook_url(url):
         + path
     )
 
+
     if keep:
 
         result += (
@@ -152,57 +107,23 @@ def clean_facebook_url(url):
             + urlencode(keep)
         )
 
+
     return result
 
 
-# ==========================================================
-# EST-CE UN VRAI RÉSULTAT ?
-# ==========================================================
-
-def valid_final_url(url):
-
-    if not is_facebook(url):
-        return False
-
-    if is_login(url):
-        return False
-
-    if is_share(url):
-        return False
-
-    if is_home(url):
-        return False
-
-    path = get_path(url).lower()
-
-    # Pages techniques Facebook
-    blocked_paths = (
-        "/checkpoint",
-        "/recover",
-        "/help",
-        "/privacy",
-        "/policies",
-        "/cookie",
-    )
-
-    for blocked in blocked_paths:
-
-        if path.startswith(blocked):
-            return False
-
-    return True
-
-
-# ==========================================================
-# EXTRACTION D'UN ID NUMÉRIQUE
-# ==========================================================
+# =========================================================
+# Chercher un ID numérique Facebook dans la page
+# =========================================================
 
 def extract_numeric_id(text):
 
     if not text:
+
         return None
 
+
     text = html.unescape(text)
+
 
     patterns = [
 
@@ -212,13 +133,8 @@ def extract_numeric_id(text):
 
         r'"profile_id"\s*:\s*"(\d{8,25})"',
 
-        r'"actorID"\s*:\s*"(\d{8,25})"',
-
-        r'"owner_id"\s*:\s*"(\d{8,25})"',
-
         r'profile\.php\?id=(\d{8,25})',
 
-        r'profile_id=(\d{8,25})'
     ]
 
 
@@ -230,6 +146,7 @@ def extract_numeric_id(text):
             re.I
         )
 
+
         if match:
 
             return match.group(1)
@@ -238,13 +155,14 @@ def extract_numeric_id(text):
     return None
 
 
-# ==========================================================
-# EXTRACTION D'UN LIEN DE PROFIL
-# ==========================================================
+# =========================================================
+# Chercher un lien /people/.../pfbid...
+# =========================================================
 
-def extract_profile_url(text):
+def extract_people_url(text):
 
     if not text:
+
         return None
 
 
@@ -261,289 +179,146 @@ def extract_profile_url(text):
     )
 
 
-    # ------------------------------------------
-    # profile.php?id=
-    # ------------------------------------------
-
     match = re.search(
-        r'https?://(?:www\.|m\.)?facebook\.com/'
-        r'profile\.php\?id=(\d{8,25})',
-        text,
-        re.I
-    )
 
-
-    if match:
-
-        return (
-            "https://www.facebook.com/"
-            "profile.php?id="
-            + match.group(1)
-        )
-
-
-    # ------------------------------------------
-    # /people/.../pfbid...
-    # ------------------------------------------
-
-    match = re.search(
-        r'https?://(?:www\.|m\.)?facebook\.com'
+        r'https?://(?:www\.)?facebook\.com'
         r'(/people/[^"\'<>\s]+/pfbid[a-zA-Z0-9]+)',
+
         text,
+
         re.I
     )
 
 
     if match:
 
-        candidate = (
+        return clean_facebook_url(
+
             "https://www.facebook.com"
             + match.group(1)
         )
-
-        if valid_final_url(candidate):
-
-            return clean_facebook_url(
-                candidate
-            )
 
 
     return None
 
 
-# ==========================================================
-# MÉTHODE 1 :
-# REDIRECTIONS FACEBOOK
-#
-# C'est volontairement la première méthode.
-# ==========================================================
-
-def follow_redirects(original, user_agent):
-
-    session = requests.Session()
-
-    session.headers.update({
-        "User-Agent": user_agent,
-        "Accept-Language":
-            "fr-FR,fr;q=0.9,en;q=0.8",
-        "Accept":
-            "text/html,application/xhtml+xml,"
-            "application/xml;q=0.9,*/*;q=0.8"
-    })
-
-
-    current = original
-
-
-    for _ in range(12):
-
-        try:
-
-            response = session.get(
-                current,
-                allow_redirects=False,
-                timeout=12
-            )
-
-        except requests.RequestException:
-
-            return {
-                "success": False,
-                "reason": "network"
-            }
-
-
-        # --------------------------------------
-        # 1. Vérification du HTML reçu
-        # --------------------------------------
-
-        numeric_id = extract_numeric_id(
-            response.text
-        )
-
-
-        if numeric_id:
-
-            return {
-                "success": True,
-
-                "url":
-                    "https://www.facebook.com/"
-                    "profile.php?id="
-                    + numeric_id,
-
-                "method":
-                    "numeric_id"
-            }
-
-
-        profile_url = extract_profile_url(
-            response.text
-        )
-
-
-        if (
-            profile_url
-            and valid_final_url(profile_url)
-        ):
-
-            return {
-                "success": True,
-                "url": profile_url,
-                "method": "html"
-            }
-
-
-        # --------------------------------------
-        # 2. REDIRECTION HTTP
-        # --------------------------------------
-
-        if (
-            response.is_redirect
-            or response.is_permanent_redirect
-        ):
-
-            location = response.headers.get(
-                "Location"
-            )
-
-
-            if not location:
-                break
-
-
-            nxt = urljoin(
-                current,
-                location
-            )
-
-
-            if not is_facebook(nxt):
-                break
-
-
-            # IMPORTANT :
-            # si la redirection donne directement
-            # un vrai profil, on le prend.
-            if valid_final_url(nxt):
-
-                return {
-                    "success": True,
-                    "url":
-                        clean_facebook_url(nxt),
-                    "method":
-                        "redirect"
-                }
-
-
-            # Facebook demande une connexion
-            if is_login(nxt):
-
-                return {
-                    "success": False,
-                    "reason": "login"
-                }
-
-
-            # Si Facebook redirige vers un autre
-            # /share/, on continue au lieu de
-            # l'afficher comme résultat.
-            current = nxt
-
-            continue
-
-
-        # --------------------------------------
-        # 3. URL finale de la requête
-        # --------------------------------------
-
-        final_response_url = response.url
-
-
-        if valid_final_url(
-            final_response_url
-        ):
-
-            return {
-                "success": True,
-
-                "url":
-                    clean_facebook_url(
-                        final_response_url
-                    ),
-
-                "method":
-                    "response_url"
-            }
-
-
-        break
-
-
-    return {
-        "success": False,
-        "reason": "unresolved"
-    }
-
-
-# ==========================================================
-# RÉSOLUTION COMPLÈTE
-# ==========================================================
+# =========================================================
+# Résoudre le lien Facebook
+# =========================================================
 
 def resolve_facebook(original):
 
-    reasons = []
+    session = requests.Session()
+
+    session.headers.update(
+        HEADERS
+    )
 
 
-    # On essaie plusieurs présentations navigateur.
-    for user_agent in USER_AGENTS:
+    try:
 
-        result = follow_redirects(
+        response = session.get(
+
             original,
-            user_agent
+
+            allow_redirects=True,
+
+            timeout=15
         )
 
 
-        if result.get("success"):
-
-            return result
-
-
-        reasons.append(
-            result.get("reason")
-        )
-
-
-    # Si au moins une tentative a été bloquée
-    # par Facebook Login :
-    if "login" in reasons:
+    except requests.RequestException:
 
         return {
             "success": False,
-            "reason": "login"
+            "error":
+                "Impossible de contacter Facebook."
         }
 
 
-    if reasons and all(
-        reason == "network"
-        for reason in reasons
-    ):
+    # =====================================================
+    # 1 - Chercher un ID numérique dans la page
+    # =====================================================
+
+    numeric_id = extract_numeric_id(
+        response.text
+    )
+
+
+    if numeric_id:
 
         return {
-            "success": False,
-            "reason": "network"
+
+            "success": True,
+
+            "url":
+                "https://www.facebook.com/"
+                "profile.php?id="
+                + numeric_id,
+
+            "method":
+                "numeric_id"
+        }
+
+
+    # =====================================================
+    # 2 - Chercher un lien /people/
+    # =====================================================
+
+    people_url = extract_people_url(
+        response.text
+    )
+
+
+    if people_url:
+
+        return {
+
+            "success": True,
+
+            "url":
+                people_url,
+
+            "method":
+                "people"
+        }
+
+
+    # =====================================================
+    # 3 - Utiliser simplement la redirection Facebook
+    # =====================================================
+
+    final_url = response.url
+
+
+    if is_facebook(final_url):
+
+        return {
+
+            "success": True,
+
+            "url":
+                clean_facebook_url(
+                    final_url
+                ),
+
+            "method":
+                "redirect"
         }
 
 
     return {
+
         "success": False,
-        "reason": "unresolved"
+
+        "error":
+            "Impossible de retrouver le profil Facebook."
     }
 
 
-# ==========================================================
-# PAGE PRINCIPALE
-# ==========================================================
+# =========================================================
+# Page principale
+# =========================================================
 
 @app.get("/")
 def home():
@@ -554,9 +329,9 @@ def home():
     )
 
 
-# ==========================================================
-# API CONVERSION
-# ==========================================================
+# =========================================================
+# API
+# =========================================================
 
 @app.post("/api/resolve")
 def resolve():
@@ -565,6 +340,7 @@ def resolve():
         request.get_json(silent=True)
         or {}
     )
+
 
     original = (
         data.get("url", "")
@@ -575,33 +351,14 @@ def resolve():
     if not is_facebook(original):
 
         return jsonify(
+
             success=False,
+
             error=
                 "Colle un lien Facebook valide."
+
         ), 400
 
-
-    # ------------------------------------------
-    # Si l'utilisateur donne déjà un vrai lien
-    # Facebook, pas besoin de résolution.
-    # ------------------------------------------
-
-    if (
-        valid_final_url(original)
-        and not is_share(original)
-    ):
-
-        return jsonify(
-            success=True,
-            final_url=
-                clean_facebook_url(original),
-            method="already_valid"
-        )
-
-
-    # ------------------------------------------
-    # Résolution
-    # ------------------------------------------
 
     result = resolve_facebook(
         original
@@ -611,147 +368,33 @@ def resolve():
     if result.get("success"):
 
         return jsonify(
+
             success=True,
-            final_url=result["url"],
-            method=result.get("method")
-        )
 
-
-    reason = result.get(
-        "reason"
-    )
-
-
-    if reason == "login":
-
-        message = (
-            "Facebook demande une connexion "
-            "et empêche le serveur d'identifier "
-            "automatiquement ce profil."
-        )
-
-
-    elif reason == "network":
-
-        message = (
-            "Impossible de contacter Facebook "
-            "correctement. Réessaie dans "
-            "quelques instants."
-        )
-
-
-    else:
-
-        message = (
-            "Facebook n'a pas fourni suffisamment "
-            "d'informations pour retrouver "
-            "automatiquement le lien permanent."
-        )
-
-
-    return jsonify(
-        success=False,
-        blocked=True,
-        reason=reason,
-        message=message,
-        original_url=original
-    )
-
-
-# ==========================================================
-# API ANALYSE MANUELLE
-# ==========================================================
-
-@app.post("/api/clean")
-def manual_clean():
-
-    data = (
-        request.get_json(silent=True)
-        or {}
-    )
-
-    url = (
-        data.get("url", "")
-        .strip()
-    )
-
-
-    if not is_facebook(url):
-
-        return jsonify(
-            success=False,
-            error=
-                "Colle un lien Facebook valide."
-        ), 400
-
-
-    if is_login(url):
-
-        return jsonify(
-            success=False,
-            error=
-                "Ce lien correspond à la page "
-                "de connexion Facebook."
-        ), 400
-
-
-    # ------------------------------------------
-    # Encore un /share/
-    #
-    # On tente réellement de le résoudre.
-    # ------------------------------------------
-
-    if is_share(url):
-
-        result = resolve_facebook(
-            url
-        )
-
-
-        if result.get("success"):
-
-            return jsonify(
-                success=True,
-                final_url=result["url"]
-            )
-
-
-        return jsonify(
-            success=False,
-            blocked=True,
-
-            message=(
-                "Facebook a encore fourni un lien "
-                "/share/. Le profil correspondant "
-                "n'est pas accessible au serveur."
-            )
-        )
-
-
-    # ------------------------------------------
-    # Vrai lien Facebook
-    # ------------------------------------------
-
-    if valid_final_url(url):
-
-        return jsonify(
-            success=True,
             final_url=
-                clean_facebook_url(url)
+                result["url"],
+
+            method=
+                result.get("method")
         )
 
 
     return jsonify(
+
         success=False,
+
         error=
-            "Ce lien Facebook ne correspond pas "
-            "à un profil exploitable."
+            result.get(
+                "error",
+                "Impossible de convertir ce lien."
+            )
+
     ), 400
 
 
-# ==========================================================
-# LANCEMENT LOCAL
-# ==========================================================
+# =========================================================
+# Lancement
+# =========================================================
 
 if __name__ == "__main__":
 
